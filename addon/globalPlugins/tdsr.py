@@ -15,6 +15,7 @@ import api
 import ui
 import config
 import gui
+import textInfos
 from gui import guiHelper, nvdaControls
 from gui.settingsDialogs import SettingsPanel
 import addonHandler
@@ -68,7 +69,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Initialize state variables
 		self.lastTerminalAppName = None
 		self.announcedHelp = False
-		self.reviewPosition = {"x": 0, "y": 0}
 		self.selectionStart = None
 		
 		# Add settings panel to NVDA preferences
@@ -160,11 +160,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self.reviewPosition["y"] = max(0, self.reviewPosition["y"] - 1)
-		self._readLineAtReview(obj)
-	
+		self._readLine(-1)
+
 	@script(
 		# Translators: Description for reading the current line
 		description=_("Read current line in terminal"),
@@ -175,10 +172,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readLineAtReview(obj)
-	
+		self._readLine(0)
+
 	@script(
 		# Translators: Description for reading the next line
 		description=_("Read next line in terminal"),
@@ -189,10 +184,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self.reviewPosition["y"] = self.reviewPosition["y"] + 1
-		self._readLineAtReview(obj)
+		self._readLine(1)
 	
 	@script(
 		# Translators: Description for reading the previous word
@@ -204,10 +196,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readWordNavigation(obj, -1)
-	
+		self._readWord(-1)
+
 	@script(
 		# Translators: Description for reading the current word
 		description=_("Read current word in terminal"),
@@ -218,10 +208,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readWordNavigation(obj, 0)
-	
+		self._readWord(0)
+
 	@script(
 		# Translators: Description for spelling the current word
 		description=_("Spell current word in terminal"),
@@ -232,17 +220,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		word = self._getWordAtReview(obj)
+		word = self._getWordAtReview()
 		if word:
-			# Spell out each character
 			for char in word:
 				ui.message(char)
 		else:
 			# Translators: Message when there is no word to spell
 			ui.message(_("No word"))
-	
+
 	@script(
 		# Translators: Description for reading the next word
 		description=_("Read next word in terminal"),
@@ -253,9 +238,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readWordNavigation(obj, 1)
+		self._readWord(1)
 	
 	@script(
 		# Translators: Description for reading the previous character
@@ -267,10 +250,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readCharNavigation(obj, -1)
-	
+		self._readChar(-1)
+
 	@script(
 		# Translators: Description for reading the current character
 		description=_("Read current character in terminal"),
@@ -281,10 +262,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readCharNavigation(obj, 0)
-	
+		self._readChar(0)
+
 	@script(
 		# Translators: Description for reading the current character phonetically
 		description=_("Read current character phonetically in terminal"),
@@ -295,19 +274,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		char = self._getCharAtReview(obj)
-		if char:
-			lower_char = char.lower()
-			if lower_char in PHONETICS:
-				ui.message(PHONETICS[lower_char])
+		try:
+			info = api.getReviewPosition().copy()
+			info.expand(textInfos.UNIT_CHARACTER)
+			char = info.text
+			if char:
+				lower_char = char.lower()
+				if lower_char in PHONETICS:
+					ui.message(PHONETICS[lower_char])
+				else:
+					ui.message(char)
 			else:
-				ui.message(char)
-		else:
-			# Translators: Message when there is no character
+				# Translators: Message when there is no character
+				ui.message(_("No character"))
+		except Exception:
 			ui.message(_("No character"))
-	
+
 	@script(
 		# Translators: Description for reading the next character
 		description=_("Read next character in terminal"),
@@ -318,9 +300,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
-		obj = api.getFocusObject()
-		self._readCharNavigation(obj, 1)
+		self._readChar(1)
 	
 	@script(
 		# Translators: Description for toggling quiet mode
@@ -393,108 +373,103 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Open NVDA settings dialog to TDSR category
 		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TDSRSettingsPanel)
 	
-	def _readLineAtReview(self, obj):
+	def _readLine(self, direction):
 		"""
-		Read a line at the current review position.
-		
+		Read a line via the NVDA review cursor.
+
 		Args:
-			obj: The terminal object to read from.
+			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			# Try to get text from the terminal
-			# This is a simplified implementation - actual terminal reading would need
-			# platform-specific APIs or accessibility APIs
-			info = obj.makeTextInfo("line")
+			info = api.getReviewPosition().copy()
+			if direction != 0:
+				info.expand(textInfos.UNIT_LINE)
+				info.collapse()
+				res = info.move(textInfos.UNIT_LINE, direction)
+				if res == 0:
+					ui.message(_("Top") if direction < 0 else _("Bottom"))
+					return
+			info.expand(textInfos.UNIT_LINE)
+			api.setReviewPosition(info)
 			text = info.text
-			
-			if text:
+			if text.strip():
 				ui.message(text)
 			else:
 				# Translators: Message when line is empty
 				ui.message(_("Blank"))
-		except:
+		except Exception:
 			# Translators: Error message when unable to read line
 			ui.message(_("Unable to read line"))
-	
-	def _readWordNavigation(self, obj, direction):
+
+	def _readWord(self, direction):
 		"""
-		Navigate by word and read.
-		
+		Navigate by word and read via the NVDA review cursor.
+
 		Args:
-			obj: The terminal object.
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			info = obj.makeTextInfo("line")
+			info = api.getReviewPosition().copy()
+			if direction != 0:
+				info.expand(textInfos.UNIT_WORD)
+				info.collapse()
+				res = info.move(textInfos.UNIT_WORD, direction)
+				if res == 0:
+					ui.message(_("Top") if direction < 0 else _("Bottom"))
+					return
+			info.expand(textInfos.UNIT_WORD)
+			api.setReviewPosition(info)
 			text = info.text
-			words = text.split()
-			
-			if not words:
+			if text.strip():
+				ui.message(text)
+			else:
 				# Translators: Message when there are no words
 				ui.message(_("No word"))
-				return
-			
-			# Simplified word navigation - would need more sophisticated tracking
-			currentWordIndex = 0
-			if 0 <= currentWordIndex < len(words):
-				ui.message(words[currentWordIndex])
-			else:
-				ui.message(_("No word"))
-		except:
+		except Exception:
 			ui.message(_("Unable to read word"))
-	
-	def _getWordAtReview(self, obj):
+
+	def _getWordAtReview(self):
 		"""
 		Get the word at the current review position.
-		
-		Args:
-			obj: The terminal object.
-			
+
 		Returns:
 			str: The word at the review position, or None.
 		"""
 		try:
-			info = obj.makeTextInfo("word")
+			info = api.getReviewPosition().copy()
+			info.expand(textInfos.UNIT_WORD)
 			return info.text
-		except:
+		except Exception:
 			return None
-	
-	def _readCharNavigation(self, obj, direction):
+
+	def _readChar(self, direction):
 		"""
-		Navigate by character and read.
-		
+		Navigate by character and read via the NVDA review cursor.
+
 		Args:
-			obj: The terminal object.
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			char = self._getCharAtReview(obj)
+			info = api.getReviewPosition().copy()
+			if direction != 0:
+				info.expand(textInfos.UNIT_CHARACTER)
+				info.collapse()
+				res = info.move(textInfos.UNIT_CHARACTER, direction)
+				if res == 0:
+					ui.message(_("Top") if direction < 0 else _("Bottom"))
+					return
+			info.expand(textInfos.UNIT_CHARACTER)
+			api.setReviewPosition(info)
+			char = info.text
 			if char:
-				# Process symbols if enabled
 				if config.conf["TDSR"]["processSymbols"]:
 					char = self._processSymbol(char)
 				ui.message(char if char.strip() else _("space"))
 			else:
 				# Translators: Message when there is no character
 				ui.message(_("No character"))
-		except:
+		except Exception:
 			ui.message(_("Unable to read character"))
-	
-	def _getCharAtReview(self, obj):
-		"""
-		Get the character at the current review position.
-		
-		Args:
-			obj: The terminal object.
-			
-		Returns:
-			str: The character at the review position, or None.
-		"""
-		try:
-			info = obj.makeTextInfo("character")
-			return info.text
-		except:
-			return None
 	
 	def _processSymbol(self, char):
 		"""
