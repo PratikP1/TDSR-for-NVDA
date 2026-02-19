@@ -21,10 +21,7 @@ from gui.settingsDialogs import SettingsPanel
 import addonHandler
 import wx
 import os
-import re
 from scriptHandler import script
-import winUser
-import keyboardHandler
 
 try:
 	addonHandler.initTranslation()
@@ -130,12 +127,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Store the terminal object and route the review cursor to it via the navigator
 			self._boundTerminal = obj
 			api.setNavigatorObject(obj)
+			# Bind review cursor to the terminal; try caret first, fall back to last position
 			try:
-				# Position review cursor at the caret/focus position in the terminal
 				info = obj.makeTextInfo(textInfos.POSITION_CARET)
 				api.setReviewPosition(info)
-			except:
-				pass
+			except Exception:
+				try:
+					info = obj.makeTextInfo(textInfos.POSITION_LAST)
+					api.setReviewPosition(info)
+				except Exception:
+					pass
 
 			# Announce help on first focus to a terminal
 			if not self.announcedHelp or appName != self.lastTerminalAppName:
@@ -290,7 +291,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("No character"))
+				return
+			info = reviewPos.copy()
 			info.expand(textInfos.UNIT_CHARACTER)
 			char = info.text
 			if char:
@@ -391,7 +396,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("Unable to copy"))
+				self._exitCopyModeBindings()
+				return
+			info = reviewPos.copy()
 			info.expand(textInfos.UNIT_LINE)
 			text = info.text
 			if text and self._copyToClipboard(text):
@@ -422,8 +432,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return
 
 			# Get the entire text from the terminal
-			info = terminal.makeTextInfo(textInfos.POSITION_FIRST)
-			info.expand(textInfos.UNIT_STORY)
+			info = terminal.makeTextInfo(textInfos.POSITION_ALL)
 			text = info.text
 			if text and self._copyToClipboard(text):
 				# Translators: Message when screen is copied
@@ -476,55 +485,45 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _copyToClipboard(self, text):
 		"""
-		Copy text to the Windows clipboard.
+		Copy text to the Windows clipboard using NVDA's clipboard API.
 
 		Args:
 			text: The text to copy to the clipboard.
 		"""
 		try:
-			import ctypes
-			import ctypes.wintypes
-
-			# Open clipboard
-			if not winUser.openClipboard():
+			result = api.copyToClip(text, notify=False)
+			return result if isinstance(result, bool) else True
+		except TypeError:
+			# Older NVDA versions do not support the notify parameter
+			try:
+				result = api.copyToClip(text)
+				return result if isinstance(result, bool) else True
+			except Exception:
 				return False
+		except Exception:
+			return False
 
-			# Empty clipboard
-			if not winUser.emptyClipboard():
-				winUser.closeClipboard()
-				return False
+	def _getReviewPosition(self):
+		"""
+		Return the current review position, re-binding to the terminal if None.
 
-			# Allocate global memory
-			hMem = ctypes.windll.kernel32.GlobalAlloc(0x0042, (len(text) + 1) * 2)  # GMEM_MOVEABLE | GMEM_ZEROINIT
-			if not hMem:
-				winUser.closeClipboard()
-				return False
-
-			# Lock memory and copy text
-			pMem = ctypes.windll.kernel32.GlobalLock(hMem)
-			if pMem:
-				ctypes.windll.kernel32.lstrcpyW(pMem, text)
-				ctypes.windll.kernel32.GlobalUnlock(hMem)
-
-				# Set clipboard data (CF_UNICODETEXT = 13)
-				if not winUser.setClipboardData(13, hMem):
-					ctypes.windll.kernel32.GlobalFree(hMem)
-					winUser.closeClipboard()
-					return False
-			else:
-				ctypes.windll.kernel32.GlobalFree(hMem)
-				winUser.closeClipboard()
-				return False
-
-			# Close clipboard
-			winUser.closeClipboard()
-			return True
+		Returns:
+			textInfos.TextInfo or None if no terminal is bound.
+		"""
+		info = api.getReviewPosition()
+		if info is not None:
+			return info
+		if self._boundTerminal is None:
+			return None
+		try:
+			info = self._boundTerminal.makeTextInfo(textInfos.POSITION_CARET)
 		except Exception:
 			try:
-				winUser.closeClipboard()
-			except:
-				pass
-			return False
+				info = self._boundTerminal.makeTextInfo(textInfos.POSITION_LAST)
+			except Exception:
+				return None
+		api.setReviewPosition(info)
+		return info
 
 	def _readLine(self, direction):
 		"""
@@ -534,7 +533,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("Unable to read line"))
+				return
+			info = reviewPos.copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_LINE)
 				info.collapse()
@@ -562,7 +565,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("Unable to read word"))
+				return
+			info = reviewPos.copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_WORD)
 				info.collapse()
@@ -589,7 +596,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			str: The word at the review position, or None.
 		"""
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				return None
+			info = reviewPos.copy()
 			info.expand(textInfos.UNIT_WORD)
 			return info.text
 		except Exception:
@@ -603,7 +613,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
-			info = api.getReviewPosition().copy()
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("No character"))
+				return
+			info = reviewPos.copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_CHARACTER)
 				info.collapse()
@@ -612,8 +626,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					ui.message(_("Top") if direction < 0 else _("Bottom"))
 					return
 			info.expand(textInfos.UNIT_CHARACTER)
-			api.setReviewPosition(info)
 			char = info.text
+			api.setReviewPosition(info)
 			if char:
 				if config.conf["TDSR"]["processSymbols"]:
 					char = self._processSymbol(char)
