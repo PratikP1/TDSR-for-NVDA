@@ -23,6 +23,8 @@ import wx
 import os
 import re
 from scriptHandler import script
+import winUser
+import keyboardHandler
 
 try:
 	addonHandler.initTranslation()
@@ -65,12 +67,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def __init__(self):
 		"""Initialize the TDSR global plugin."""
 		super(GlobalPlugin, self).__init__()
-		
+
 		# Initialize state variables
 		self.lastTerminalAppName = None
 		self.announcedHelp = False
 		self.selectionStart = None
-		
+		self.copyMode = False
+
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
 	
@@ -371,9 +374,100 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
+
+		# Enter copy mode
+		self.copyMode = True
+		# Bind keys for copy mode
+		self.bindGesture("kb:l", "copyLine")
+		self.bindGesture("kb:s", "copyScreen")
+		self.bindGesture("kb:escape", "exitCopyMode")
 		# Translators: Message entering copy mode
 		ui.message(_("Copy mode. Press L to copy line, S to copy screen, or Escape to cancel."))
+
+	@script(
+		# Translators: Description for copying line
+		description=_("Copy line in copy mode")
+	)
+	def script_copyLine(self, gesture):
+		"""Copy the current line to clipboard."""
+		if not self.copyMode:
+			gesture.send()
+			return
+
+		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
+			info = api.getReviewPosition().copy()
+			info.expand(textInfos.UNIT_LINE)
+			text = info.text
+			if text and self._copyToClipboard(text):
+				# Translators: Message when line is copied
+				ui.message(_("Line copied"))
+			else:
+				# Translators: Error message when unable to copy
+				ui.message(_("Unable to copy"))
+		except Exception:
+			ui.message(_("Unable to copy"))
+		finally:
+			self._exitCopyModeBindings()
+
+	@script(
+		# Translators: Description for copying screen
+		description=_("Copy screen in copy mode")
+	)
+	def script_copyScreen(self, gesture):
+		"""Copy the entire screen to clipboard."""
+		if not self.copyMode:
+			gesture.send()
+			return
+
+		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
+			# Get the entire text from the terminal
+			info = obj.makeTextInfo(textInfos.POSITION_FIRST)
+			info.expand(textInfos.UNIT_STORY)
+			text = info.text
+			if text and self._copyToClipboard(text):
+				# Translators: Message when screen is copied
+				ui.message(_("Screen copied"))
+			else:
+				# Translators: Error message when unable to copy
+				ui.message(_("Unable to copy"))
+		except Exception:
+			ui.message(_("Unable to copy"))
+		finally:
+			self._exitCopyModeBindings()
+
+	@script(
+		# Translators: Description for exiting copy mode
+		description=_("Exit copy mode")
+	)
+	def script_exitCopyMode(self, gesture):
+		"""Exit copy mode."""
+		if not self.copyMode:
+			gesture.send()
+			return
+
+		# Translators: Message when copy mode is canceled
+		ui.message(_("Copy mode canceled"))
+		self._exitCopyModeBindings()
+
+	def _exitCopyModeBindings(self):
+		"""Exit copy mode and unbind the copy mode keys."""
+		self.copyMode = False
+		try:
+			self.removeGestureBinding("kb:l")
+			self.removeGestureBinding("kb:s")
+			self.removeGestureBinding("kb:escape")
+		except:
+			pass
 	
 	@script(
 		# Translators: Description for opening terminal settings
@@ -385,10 +479,62 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		
+
 		# Open NVDA settings dialog to TDSR category
 		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TDSRSettingsPanel)
-	
+
+	def _copyToClipboard(self, text):
+		"""
+		Copy text to the Windows clipboard.
+
+		Args:
+			text: The text to copy to the clipboard.
+		"""
+		try:
+			import ctypes
+			import ctypes.wintypes
+
+			# Open clipboard
+			if not winUser.openClipboard():
+				return False
+
+			# Empty clipboard
+			if not winUser.emptyClipboard():
+				winUser.closeClipboard()
+				return False
+
+			# Allocate global memory
+			hMem = ctypes.windll.kernel32.GlobalAlloc(0x0042, (len(text) + 1) * 2)  # GMEM_MOVEABLE | GMEM_ZEROINIT
+			if not hMem:
+				winUser.closeClipboard()
+				return False
+
+			# Lock memory and copy text
+			pMem = ctypes.windll.kernel32.GlobalLock(hMem)
+			if pMem:
+				ctypes.windll.kernel32.lstrcpyW(pMem, text)
+				ctypes.windll.kernel32.GlobalUnlock(hMem)
+
+				# Set clipboard data (CF_UNICODETEXT = 13)
+				if not winUser.setClipboardData(13, hMem):
+					ctypes.windll.kernel32.GlobalFree(hMem)
+					winUser.closeClipboard()
+					return False
+			else:
+				ctypes.windll.kernel32.GlobalFree(hMem)
+				winUser.closeClipboard()
+				return False
+
+			# Close clipboard
+			winUser.closeClipboard()
+			return True
+		except Exception:
+			try:
+				winUser.closeClipboard()
+			except:
+				pass
+			return False
+
 	def _readLine(self, direction):
 		"""
 		Read a line via the NVDA review cursor.
