@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+Validation script for TDSR for NVDA add-on.
+
+This script performs basic checks on the add-on before building or releasing.
+Usage: python validate.py
+"""
+
+import os
+import sys
+from pathlib import Path
+import configparser
+
+def check_file_exists(filepath, description):
+	"""Check if a required file exists."""
+	if os.path.exists(filepath):
+		print(f"✓ {description}: {filepath}")
+		return True
+	else:
+		print(f"✗ {description} MISSING: {filepath}")
+		return False
+
+def check_manifest():
+	"""Validate manifest.ini file."""
+	print("\n=== Checking manifest.ini ===")
+	
+	if not os.path.exists("manifest.ini"):
+		print("✗ manifest.ini not found!")
+		return False
+	
+	config = configparser.ConfigParser()
+	config.read("manifest.ini")
+	
+	required_fields = [
+		("Core", "name"),
+		("Core", "summary"),
+		("Core", "version"),
+		("Core", "author"),
+		("Core", "minimumNVDAVersion"),
+	]
+	
+	all_present = True
+	for section, key in required_fields:
+		if config.has_option(section, key):
+			value = config.get(section, key)
+			print(f"✓ {section}.{key} = {value}")
+		else:
+			print(f"✗ {section}.{key} MISSING")
+			all_present = False
+	
+	return all_present
+
+def check_python_syntax():
+	"""Check Python files for syntax errors."""
+	print("\n=== Checking Python syntax ===")
+	
+	python_files = list(Path("addon").rglob("*.py"))
+	python_files.append(Path("buildVars.py"))
+	python_files.append(Path("build.py"))
+	
+	all_valid = True
+	for py_file in python_files:
+		try:
+			with open(py_file, 'r', encoding='utf-8') as f:
+				compile(f.read(), str(py_file), 'exec')
+			print(f"✓ {py_file}")
+		except SyntaxError as e:
+			print(f"✗ {py_file}: Syntax error at line {e.lineno}")
+			all_valid = False
+	
+	return all_valid
+
+def check_structure():
+	"""Check directory structure."""
+	print("\n=== Checking directory structure ===")
+	
+	required_paths = [
+		("addon", "Add-on directory"),
+		("addon/globalPlugins", "Global plugins directory"),
+		("addon/globalPlugins/tdsr.py", "Main plugin file"),
+		("addon/doc/en", "English documentation directory"),
+		("addon/doc/en/readme.html", "User guide"),
+		("manifest.ini", "Manifest file"),
+		("buildVars.py", "Build variables"),
+	]
+	
+	all_present = True
+	for path, description in required_paths:
+		if not check_file_exists(path, description):
+			all_present = False
+	
+	return all_present
+
+def check_documentation():
+	"""Check documentation completeness."""
+	print("\n=== Checking documentation ===")
+	
+	docs = [
+		"README.md",
+		"CHANGELOG.md",
+		"INSTALL.md",
+		"ROADMAP.md",
+		"CONTRIBUTING.md",
+		"LICENSE",
+	]
+	
+	all_present = True
+	for doc in docs:
+		if not check_file_exists(doc, f"Documentation: {doc}"):
+			all_present = False
+	
+	return all_present
+
+def check_user_guide():
+	"""Check user guide content."""
+	print("\n=== Checking user guide ===")
+	
+	guide_path = "addon/doc/en/readme.html"
+	if not os.path.exists(guide_path):
+		print("✗ User guide not found")
+		return False
+	
+	with open(guide_path, 'r', encoding='utf-8') as f:
+		content = f.read()
+	
+	required_sections = [
+		"Introduction",
+		"Features",
+		"Keyboard Commands",
+		"Settings",
+		"Troubleshooting",
+	]
+	
+	all_present = True
+	for section in required_sections:
+		if section.lower() in content.lower():
+			print(f"✓ Section found: {section}")
+		else:
+			print(f"✗ Section missing: {section}")
+			all_present = False
+	
+	return all_present
+
+def main():
+	"""Run all validation checks."""
+	print("=" * 60)
+	print("TDSR for NVDA - Validation Script")
+	print("=" * 60)
+	
+	# Change to script directory
+	os.chdir(os.path.dirname(os.path.abspath(__file__)))
+	
+	checks = [
+		("Directory Structure", check_structure),
+		("Manifest", check_manifest),
+		("Python Syntax", check_python_syntax),
+		("Documentation", check_documentation),
+		("User Guide", check_user_guide),
+	]
+	
+	results = []
+	for name, check_func in checks:
+		try:
+			result = check_func()
+			results.append((name, result))
+		except Exception as e:
+			print(f"\n✗ Error running {name} check: {e}")
+			results.append((name, False))
+	
+	# Summary
+	print("\n" + "=" * 60)
+	print("VALIDATION SUMMARY")
+	print("=" * 60)
+	
+	all_passed = True
+	for name, result in results:
+		status = "PASSED" if result else "FAILED"
+		symbol = "✓" if result else "✗"
+		print(f"{symbol} {name}: {status}")
+		if not result:
+			all_passed = False
+	
+	print("=" * 60)
+	
+	if all_passed:
+		print("\n✓ All checks passed! Add-on is ready for building.")
+		return 0
+	else:
+		print("\n✗ Some checks failed. Please fix the issues before building.")
+		return 1
+
+if __name__ == "__main__":
+	sys.exit(main())

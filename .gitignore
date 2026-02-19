@@ -25,6 +25,9 @@ wheels/
 *.pot
 *.mo
 
+# Build artifacts
+TDSR-*.nvda-addon
+
 # IDE
 .vscode/
 .idea/

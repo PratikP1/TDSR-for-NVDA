@@ -1,0 +1,76 @@
+"""
+SCons build script for TDSR for NVDA add-on.
+
+This script is used to build the NVDA add-on package.
+Run with: scons
+"""
+
+import os
+import sys
+import gettext
+import zipfile
+from glob import glob
+
+# Import build variables
+sys.path.insert(0, os.path.abspath('.'))
+import buildVars
+
+def createAddonBundleFromPath(path, dest):
+	"""
+	Create an NVDA add-on bundle from the given path.
+	
+	Args:
+		path: Source directory containing add-on files
+		dest: Destination path for the .nvda-addon file
+	"""
+	addonFile = zipfile.ZipFile(dest, 'w', zipfile.ZIP_DEFLATED)
+	
+	# Add manifest
+	addonFile.write("manifest.ini", arcname="manifest.ini")
+	
+	# Add all files from addon directory
+	for root, dirs, files in os.walk("addon"):
+		# Skip __pycache__ directories
+		if '__pycache__' in root:
+			continue
+		
+		for file in files:
+			# Skip .pyc files
+			if file.endswith('.pyc'):
+				continue
+				
+			filePath = os.path.join(root, file)
+			arcPath = filePath.replace("addon" + os.sep, "", 1)
+			addonFile.write(filePath, arcname=arcPath)
+	
+	addonFile.close()
+
+# Get add-on information from buildVars
+addon_info = buildVars.addon_info
+addon_name = addon_info["addon_name"]
+addon_version = addon_info["addon_version"]
+
+# Define the add-on filename
+addonFile = "{name}-{version}.nvda-addon".format(
+	name=addon_name,
+	version=addon_version
+)
+
+# SCons environment
+env = Environment(ENV=os.environ)
+
+# Build target
+def buildAddon(target, source, env):
+	"""Build the add-on package."""
+	outputFile = str(target[0])
+	createAddonBundleFromPath(".", outputFile)
+	print("Add-on package created: {}".format(outputFile))
+
+# Define build command
+addonTarget = env.Command(addonFile, ["manifest.ini"] + glob("addon/**/*", recursive=True), buildAddon)
+
+# Default build
+env.Default(addonTarget)
+
+# Clean command
+env.Clean(addonTarget, [addonFile, "*.pyc", "__pycache__"])
