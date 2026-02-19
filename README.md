@@ -56,7 +56,7 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 - **NVDA+Alt+K** (twice) - Spell current word
 - **NVDA+Alt+Comma** (twice) - Read character phonetically
 - **NVDA+Alt+Q** - Toggle quiet mode
-- **NVDA+Alt+R** - Start/end selection
+- **NVDA+Alt+R** - Start/end selection (automatically copies to clipboard)
 - **NVDA+Alt+V** - Enter copy mode
 - **NVDA+Alt+C** - Open settings
 

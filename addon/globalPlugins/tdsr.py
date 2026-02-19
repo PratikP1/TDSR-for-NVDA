@@ -496,10 +496,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				# Translators: Message when selection starts
 				ui.message(_("Selection started"))
 			else:
-				# End selection
-				self.selectionStart = None
-				# Translators: Message when selection ends
-				ui.message(_("Selection ended"))
+				# End selection - copy text between markers to clipboard
+				try:
+					# Get terminal object
+					terminal = self._boundTerminal
+					if not terminal:
+						ui.message(_("Unable to copy selection"))
+						self.selectionStart = None
+						return
+
+					# Create text info from start marker
+					startInfo = terminal.makeTextInfo(self.selectionStart)
+					# Create text info at current review position (end marker)
+					endInfo = reviewPos.copy()
+
+					# Set range from start to end
+					startInfo.setEndPoint(endInfo, "endToEnd")
+
+					# Get the selected text
+					selectedText = startInfo.text
+
+					# Copy to clipboard
+					if selectedText and self._copyToClipboard(selectedText):
+						# Translators: Message when selection is copied to clipboard
+						ui.message(_("Selection copied to clipboard"))
+					else:
+						# Translators: Error message when unable to copy
+						ui.message(_("Unable to copy selection"))
+				except Exception:
+					# Translators: Error message when unable to copy
+					ui.message(_("Unable to copy selection"))
+				finally:
+					# Always clear the selection marker
+					self.selectionStart = None
 		except Exception:
 			ui.message(_("Unable to set selection"))
 	
