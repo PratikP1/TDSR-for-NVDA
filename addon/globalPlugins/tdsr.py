@@ -114,14 +114,25 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def event_gainFocus(self, obj, nextHandler):
 		"""
 		Handle focus gain events.
-		
+
 		Announces help availability when entering a terminal for the first time.
+		Binds the review cursor to the focused terminal window.
 		"""
 		nextHandler()
-		
+
 		if self.isTerminalApp(obj):
 			appName = obj.appModule.appName
-			
+
+			# Bind review cursor to the focused terminal object
+			api.setNavigatorObject(obj)
+			try:
+				# Position review cursor at the caret/focus position in the terminal
+				info = obj.makeTextInfo(textInfos.POSITION_CARET)
+				api.setReviewPosition(info)
+			except:
+				# Fallback: just ensure navigator is set to the focused object
+				pass
+
 			# Announce help on first focus to a terminal
 			if not self.announcedHelp or appName != self.lastTerminalAppName:
 				self.lastTerminalAppName = appName
@@ -275,6 +286,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
 			info = api.getReviewPosition().copy()
 			info.expand(textInfos.UNIT_CHARACTER)
 			char = info.text
@@ -381,6 +397,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
 			info = api.getReviewPosition().copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_LINE)
@@ -409,6 +430,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
 			info = api.getReviewPosition().copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_WORD)
@@ -436,6 +462,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			str: The word at the review position, or None.
 		"""
 		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
 			info = api.getReviewPosition().copy()
 			info.expand(textInfos.UNIT_WORD)
 			return info.text
@@ -450,6 +481,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			direction: -1 for previous, 0 for current, 1 for next.
 		"""
 		try:
+			# Ensure navigator object is set to focus for terminal binding
+			obj = api.getFocusObject()
+			if obj and self.isTerminalApp(obj):
+				api.setNavigatorObject(obj)
+
 			info = api.getReviewPosition().copy()
 			if direction != 0:
 				info.expand(textInfos.UNIT_CHARACTER)
