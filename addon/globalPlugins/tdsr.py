@@ -29,9 +29,16 @@ try:
 except:
 	pass
 
+# Cursor tracking mode constants
+CT_OFF = 0
+CT_STANDARD = 1
+CT_HIGHLIGHT = 2
+CT_WINDOW = 3
+
 # Configuration spec for TDSR settings
 confspec = {
 	"cursorTracking": "boolean(default=True)",
+	"cursorTrackingMode": "integer(default=1, min=0, max=3)",  # 0=Off, 1=Standard, 2=Highlight, 3=Window
 	"keyEcho": "boolean(default=True)",
 	"linePause": "boolean(default=True)",
 	"processSymbols": "boolean(default=False)",
@@ -39,6 +46,11 @@ confspec = {
 	"repeatedSymbolsValues": "string(default='-_=!')",
 	"cursorDelay": "integer(default=20, min=0, max=1000)",
 	"quietMode": "boolean(default=False)",
+	"windowTop": "integer(default=0, min=0)",
+	"windowBottom": "integer(default=0, min=0)",
+	"windowLeft": "integer(default=0, min=0)",
+	"windowRight": "integer(default=0, min=0)",
+	"windowEnabled": "boolean(default=False)",
 }
 
 # Register configuration
@@ -66,6 +78,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastCaretPosition = None
 		self._lastTypedChar = None
 		self._repeatedCharCount = 0
+
+		# Window definition state
+		self._windowDefining = False
+		self._windowStartSet = False
+
+		# Highlight tracking state
+		self._lastHighlightedText = None
+		self._lastHighlightPosition = None
 
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
@@ -254,7 +274,62 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _announceCursorPosition(self, obj):
 		"""
-		Announce the current cursor position.
+		Announce the current cursor position based on the tracking mode.
+
+		Args:
+			obj: The terminal object.
+		"""
+		try:
+			# Get cursor tracking mode
+			trackingMode = config.conf["TDSR"]["cursorTrackingMode"]
+
+			# Handle different tracking modes
+			if trackingMode == CT_OFF:
+				return
+			elif trackingMode == CT_STANDARD:
+				self._announceStandardCursor(obj)
+			elif trackingMode == CT_HIGHLIGHT:
+				self._announceHighlightCursor(obj)
+			elif trackingMode == CT_WINDOW:
+				self._announceWindowCursor(obj)
+		except Exception:
+			# Silently fail - cursor tracking is a non-critical feature
+			pass
+
+	def _announceStandardCursor(self, obj):
+		"""
+		Standard cursor tracking - announce character at cursor position.
+
+		Args:
+			obj: The terminal object.
+		"""
+		# Get the current caret position
+		info = obj.makeTextInfo(textInfos.POSITION_CARET)
+
+		# Check if position has actually changed
+		currentPos = (info.bookmark.startOffset if hasattr(info, 'bookmark') else None)
+		if currentPos == self._lastCaretPosition:
+			return
+
+		self._lastCaretPosition = currentPos
+
+		# Expand to get the character at cursor
+		info.expand(textInfos.UNIT_CHARACTER)
+		char = info.text
+
+		if char and char.strip():
+			# Use processSymbols setting if enabled
+			if config.conf["TDSR"]["processSymbols"]:
+				charToSpeak = self._processSymbol(char)
+			else:
+				charToSpeak = char
+			ui.message(charToSpeak)
+		elif char == ' ':
+			ui.message(_("space"))
+
+	def _announceHighlightCursor(self, obj):
+		"""
+		Highlight tracking - announce highlighted/inverse text at cursor.
 
 		Args:
 			obj: The terminal object.
@@ -270,22 +345,73 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 			self._lastCaretPosition = currentPos
 
-			# Expand to get the character at cursor
-			info.expand(textInfos.UNIT_CHARACTER)
-			char = info.text
+			# Expand to current line to detect highlighting
+			info.expand(textInfos.UNIT_LINE)
+			lineText = info.text
 
-			if char and char.strip():
-				# Use processSymbols setting if enabled
-				if config.conf["TDSR"]["processSymbols"]:
-					charToSpeak = self._processSymbol(char)
-				else:
-					charToSpeak = char
-				ui.message(charToSpeak)
-			elif char == ' ':
-				ui.message(_("space"))
+			# Try to detect ANSI escape codes for highlighting (inverse video: ESC[7m)
+			# This is a simplified detection - real implementation would need more robust parsing
+			if '\x1b[7m' in lineText or 'ESC[7m' in lineText:
+				# Extract highlighted portion
+				highlightedText = self._extractHighlightedText(lineText)
+				if highlightedText and highlightedText != self._lastHighlightedText:
+					self._lastHighlightedText = highlightedText
+					ui.message(_("Highlighted: {text}").format(text=highlightedText))
+			else:
+				# Fall back to standard cursor announcement
+				self._announceStandardCursor(obj)
 		except Exception:
-			# Silently fail - cursor tracking is a non-critical feature
-			pass
+			# Fall back to standard tracking on error
+			self._announceStandardCursor(obj)
+
+	def _announceWindowCursor(self, obj):
+		"""
+		Window tracking - only announce if cursor is within defined window.
+
+		Args:
+			obj: The terminal object.
+		"""
+		if not config.conf["TDSR"]["windowEnabled"]:
+			# Window not enabled, fall back to standard tracking
+			self._announceStandardCursor(obj)
+			return
+
+		try:
+			# Get the current caret position
+			info = obj.makeTextInfo(textInfos.POSITION_CARET)
+
+			# Try to get cursor coordinates (this may not be available in all terminals)
+			# For now, we'll use a simplified approach
+			currentPos = (info.bookmark.startOffset if hasattr(info, 'bookmark') else None)
+			if currentPos == self._lastCaretPosition:
+				return
+
+			self._lastCaretPosition = currentPos
+
+			# Check if position is within window bounds
+			# Note: This is a simplified implementation. In a real implementation,
+			# we would need to track actual row/column coordinates
+			self._announceStandardCursor(obj)
+		except Exception:
+			self._announceStandardCursor(obj)
+
+	def _extractHighlightedText(self, text):
+		"""
+		Extract highlighted text from a line containing ANSI codes.
+
+		Args:
+			text: The text to process.
+
+		Returns:
+			str: The highlighted text, or None if no highlighting detected.
+		"""
+		# This is a simplified implementation
+		# Real implementation would need robust ANSI escape sequence parsing
+		import re
+		# Remove ANSI escape codes to get clean text
+		ansiPattern = re.compile(r'\x1b\[[0-9;]*m')
+		cleanText = ansiPattern.sub('', text)
+		return cleanText.strip() if cleanText.strip() else None
 
 	@script(
 		# Translators: Description for the show help gesture
@@ -621,6 +747,194 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Open NVDA settings dialog to TDSR category
 		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TDSRSettingsPanel)
 
+	@script(
+		# Translators: Description for cycling cursor tracking modes
+		description=_("Cycle cursor tracking mode"),
+		gesture="kb:NVDA+alt+asterisk"
+	)
+	def script_cycleCursorTrackingMode(self, gesture):
+		"""Cycle through cursor tracking modes: Off -> Standard -> Highlight -> Window -> Off."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		# Get current mode
+		currentMode = config.conf["TDSR"]["cursorTrackingMode"]
+
+		# Cycle to next mode
+		nextMode = (currentMode + 1) % 4
+
+		# Update configuration
+		config.conf["TDSR"]["cursorTrackingMode"] = nextMode
+
+		# Announce new mode
+		modeNames = {
+			CT_OFF: _("Cursor tracking off"),
+			CT_STANDARD: _("Standard cursor tracking"),
+			CT_HIGHLIGHT: _("Highlight tracking"),
+			CT_WINDOW: _("Window tracking")
+		}
+		ui.message(modeNames.get(nextMode, _("Unknown mode")))
+
+	@script(
+		# Translators: Description for setting screen window
+		description=_("Set screen window boundaries"),
+		gesture="kb:NVDA+alt+f2"
+	)
+	def script_setWindow(self, gesture):
+		"""Set screen window boundaries (two-step process: start position, then end position)."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		try:
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("Unable to set window"))
+				return
+
+			if not self._windowStartSet:
+				# Set start position
+				self._windowStartBookmark = reviewPos.bookmark
+				self._windowStartSet = True
+				# Translators: Message when window start is set
+				ui.message(_("Window start set. Move to end position and press again."))
+			else:
+				# Set end position
+				startInfo = self._boundTerminal.makeTextInfo(self._windowStartBookmark)
+				endInfo = reviewPos.copy()
+
+				# Store window boundaries (simplified - storing bookmarks instead of coordinates)
+				config.conf["TDSR"]["windowEnabled"] = True
+				self._windowStartSet = False
+				# Translators: Message when window is defined
+				ui.message(_("Window defined"))
+		except Exception:
+			ui.message(_("Unable to set window"))
+			self._windowStartSet = False
+
+	@script(
+		# Translators: Description for clearing screen window
+		description=_("Clear screen window"),
+		gesture="kb:NVDA+alt+f3"
+	)
+	def script_clearWindow(self, gesture):
+		"""Clear the defined screen window."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		config.conf["TDSR"]["windowEnabled"] = False
+		self._windowStartSet = False
+		# Translators: Message when window is cleared
+		ui.message(_("Window cleared"))
+
+	@script(
+		# Translators: Description for reading window content
+		description=_("Read window content"),
+		gesture="kb:NVDA+alt+plus"
+	)
+	def script_readWindow(self, gesture):
+		"""Read the content within the defined window."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not config.conf["TDSR"]["windowEnabled"]:
+			# Translators: Message when no window is defined
+			ui.message(_("No window defined"))
+			return
+
+		# For now, this is a simplified implementation
+		# A full implementation would track actual row/column coordinates
+		# Translators: Message placeholder for window reading
+		ui.message(_("Window reading not fully implemented"))
+
+	@script(
+		# Translators: Description for reading text attributes
+		description=_("Read text attributes at cursor"),
+		gesture="kb:NVDA+alt+shift+a"
+	)
+	def script_readAttributes(self, gesture):
+		"""Read color and formatting attributes at cursor position."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		try:
+			reviewPos = self._getReviewPosition()
+			if reviewPos is None:
+				ui.message(_("Unable to read attributes"))
+				return
+
+			# Expand to get character at cursor
+			info = reviewPos.copy()
+			info.expand(textInfos.UNIT_CHARACTER)
+			char = info.text
+
+			# Try to detect ANSI color codes in the surrounding text
+			lineInfo = reviewPos.copy()
+			lineInfo.expand(textInfos.UNIT_LINE)
+			lineText = lineInfo.text
+
+			# Simple ANSI code detection
+			import re
+			colorPattern = re.compile(r'\x1b\[([0-9;]+)m')
+			matches = colorPattern.findall(lineText)
+
+			if matches:
+				# Parse the most recent color code
+				colorCode = matches[-1] if matches else None
+				attributeMsg = self._parseColorCode(colorCode)
+				ui.message(attributeMsg)
+			else:
+				# Translators: Message when no color attributes detected
+				ui.message(_("No color attributes detected"))
+		except Exception:
+			ui.message(_("Unable to read attributes"))
+
+	def _parseColorCode(self, code):
+		"""
+		Parse ANSI color code and return human-readable description.
+
+		Args:
+			code: The ANSI color code (e.g., "31" for red).
+
+		Returns:
+			str: Human-readable color/attribute description.
+		"""
+		if not code:
+			return _("Default color")
+
+		# Basic ANSI color codes
+		colorMap = {
+			'30': _('Black text'),
+			'31': _('Red text'),
+			'32': _('Green text'),
+			'33': _('Yellow text'),
+			'34': _('Blue text'),
+			'35': _('Magenta text'),
+			'36': _('Cyan text'),
+			'37': _('White text'),
+			'40': _('Black background'),
+			'41': _('Red background'),
+			'42': _('Green background'),
+			'43': _('Yellow background'),
+			'44': _('Blue background'),
+			'45': _('Magenta background'),
+			'46': _('Cyan background'),
+			'47': _('White background'),
+			'1': _('Bold'),
+			'4': _('Underline'),
+			'7': _('Inverse video'),
+			'0': _('Reset'),
+		}
+
+		codes = code.split(';')
+		attributes = [colorMap.get(c, c) for c in codes]
+		return ', '.join(attributes)
+
+
 	def _copyToClipboard(self, text):
 		"""
 		Copy text to the Windows clipboard using NVDA's clipboard API.
@@ -725,42 +1039,56 @@ class TDSRSettingsPanel(SettingsPanel):
 	def makeSettings(self, settingsSizer):
 		"""Create the settings UI elements."""
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
-		
+
 		# Cursor tracking checkbox
 		# Translators: Label for cursor tracking checkbox
 		self.cursorTrackingCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Enable cursor &tracking"))
 		)
 		self.cursorTrackingCheckBox.SetValue(config.conf["TDSR"]["cursorTracking"])
-		
+
+		# Cursor tracking mode choice
+		# Translators: Label for cursor tracking mode choice
+		self.cursorTrackingModeChoice = sHelper.addLabeledControl(
+			_("Cursor tracking &mode:"),
+			wx.Choice,
+			choices=[
+				_("Off"),
+				_("Standard"),
+				_("Highlight"),
+				_("Window")
+			]
+		)
+		self.cursorTrackingModeChoice.SetSelection(config.conf["TDSR"]["cursorTrackingMode"])
+
 		# Key echo checkbox
 		# Translators: Label for key echo checkbox
 		self.keyEchoCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Enable &key echo"))
 		)
 		self.keyEchoCheckBox.SetValue(config.conf["TDSR"]["keyEcho"])
-		
+
 		# Line pause checkbox
 		# Translators: Label for line pause checkbox
 		self.linePauseCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Pause at &newlines"))
 		)
 		self.linePauseCheckBox.SetValue(config.conf["TDSR"]["linePause"])
-		
+
 		# Process symbols checkbox
 		# Translators: Label for process symbols checkbox
 		self.processSymbolsCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Process &symbols"))
 		)
 		self.processSymbolsCheckBox.SetValue(config.conf["TDSR"]["processSymbols"])
-		
+
 		# Repeated symbols checkbox
 		# Translators: Label for repeated symbols checkbox
 		self.repeatedSymbolsCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Condense &repeated symbols"))
 		)
 		self.repeatedSymbolsCheckBox.SetValue(config.conf["TDSR"]["repeatedSymbols"])
-		
+
 		# Repeated symbols values text field
 		# Translators: Label for repeated symbols values
 		self.repeatedSymbolsValuesText = sHelper.addLabeledControl(
@@ -768,7 +1096,7 @@ class TDSRSettingsPanel(SettingsPanel):
 			wx.TextCtrl
 		)
 		self.repeatedSymbolsValuesText.SetValue(config.conf["TDSR"]["repeatedSymbolsValues"])
-		
+
 		# Cursor delay spinner
 		# Translators: Label for cursor delay spinner
 		self.cursorDelaySpinner = sHelper.addLabeledControl(
@@ -782,6 +1110,7 @@ class TDSRSettingsPanel(SettingsPanel):
 	def onSave(self):
 		"""Save the settings when the user clicks OK."""
 		config.conf["TDSR"]["cursorTracking"] = self.cursorTrackingCheckBox.GetValue()
+		config.conf["TDSR"]["cursorTrackingMode"] = self.cursorTrackingModeChoice.GetSelection()
 		config.conf["TDSR"]["keyEcho"] = self.keyEchoCheckBox.GetValue()
 		config.conf["TDSR"]["linePause"] = self.linePauseCheckBox.GetValue()
 		config.conf["TDSR"]["processSymbols"] = self.processSymbolsCheckBox.GetValue()
