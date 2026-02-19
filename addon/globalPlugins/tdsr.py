@@ -44,16 +44,6 @@ confspec = {
 # Register configuration
 config.conf.spec["TDSR"] = confspec
 
-# Phonetic alphabet for character spelling
-PHONETICS = {
-	'a': 'alpha', 'b': 'bravo', 'c': 'charlie', 'd': 'delta', 'e': 'echo', 
-	'f': 'foxtrot', 'g': 'golf', 'h': 'hotel', 'i': 'india', 'j': 'juliet', 
-	'k': 'kilo', 'l': 'lima', 'm': 'mike', 'n': 'november', 'o': 'oscar', 
-	'p': 'papa', 'q': 'quebec', 'r': 'romeo', 's': 'sierra', 't': 'tango', 
-	'u': 'uniform', 'v': 'victor', 'w': 'whiskey', 'x': 'x ray', 'y': 'yankee', 
-	'z': 'zulu'
-}
-
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
@@ -393,18 +383,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-
-		# Ensure navigator is bound to terminal before accessing review position
-		if self._boundTerminal:
-			api.setNavigatorObject(self._boundTerminal)
-
-		word = self._getWordAtReview()
-		if word:
-			for char in word:
-				ui.message(char)
-		else:
-			# Translators: Message when there is no word to spell
-			ui.message(_("No word"))
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_spellingCurrentWord(gesture)
 
 	@script(
 		# Translators: Description for reading the next word
@@ -455,30 +435,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-
-		# Ensure navigator is bound to terminal before accessing review position
-		if self._boundTerminal:
-			api.setNavigatorObject(self._boundTerminal)
-
-		try:
-			reviewPos = self._getReviewPosition()
-			if reviewPos is None:
-				ui.message(_("No character"))
-				return
-			info = reviewPos.copy()
-			info.expand(textInfos.UNIT_CHARACTER)
-			char = info.text
-			if char:
-				lower_char = char.lower()
-				if lower_char in PHONETICS:
-					ui.message(PHONETICS[lower_char])
-				else:
-					ui.message(char)
-			else:
-				# Translators: Message when there is no character
-				ui.message(_("No character"))
-		except Exception:
-			ui.message(_("No character"))
+		# Use NVDA's built-in review cursor functionality (repeating current character gives phonetic)
+		globalCommands.commands.script_review_currentCharacter(gesture)
 
 	@script(
 		# Translators: Description for reading the next character
@@ -704,23 +662,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return None
 		api.setReviewPosition(info)
 		return info
-
-	def _getWordAtReview(self):
-		"""
-		Get the word at the current review position.
-
-		Returns:
-			str: The word at the review position, or None.
-		"""
-		try:
-			reviewPos = self._getReviewPosition()
-			if reviewPos is None:
-				return None
-			info = reviewPos.copy()
-			info.expand(textInfos.UNIT_WORD)
-			return info.text
-		except Exception:
-			return None
 
 	def _processSymbol(self, char):
 		"""
