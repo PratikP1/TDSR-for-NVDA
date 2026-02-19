@@ -2,6 +2,41 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.8] - 2026-02-19
+
+### Added
+- **Multiple cursor tracking modes** - Four distinct tracking modes (Off, Standard, Highlight, Window) inspired by Speakup
+  - Off: Cursor tracking disabled
+  - Standard: Announce character at cursor position (default)
+  - Highlight: Track and announce highlighted/inverse video text
+  - Window: Only track cursor within defined screen window
+- **Gesture to cycle cursor tracking modes** - NVDA+Alt+Asterisk cycles through modes
+- **Screen windowing system** - Define rectangular regions for focused monitoring
+  - NVDA+Alt+F2: Set window boundaries (two-step: start, then end)
+  - NVDA+Alt+F3: Clear window
+  - NVDA+Alt+Plus: Read window content
+- **Attribute/color reading** - NVDA+Alt+Shift+A announces ANSI colors and formatting
+  - Supports 16 ANSI colors (foreground and background)
+  - Recognizes bold, underline, and inverse video
+  - Human-readable color announcements
+- **Highlight tracking mode** - Detects and announces ANSI inverse video codes (ESC[7m)
+- **ANSI escape sequence parser** - Comprehensive color code detection and parsing
+
+### Changed
+- Enhanced cursor tracking architecture with mode-based dispatcher
+- Added cursor tracking mode selector to settings panel
+- Updated documentation with new features and commands
+
+### Technical
+- Added mode constants: CT_OFF, CT_STANDARD, CT_HIGHLIGHT, CT_WINDOW
+- New configuration parameters: cursorTrackingMode, windowTop/Bottom/Left/Right, windowEnabled
+- Implemented _announceStandardCursor, _announceHighlightCursor, _announceWindowCursor methods
+- Added _extractHighlightedText and _parseColorCode helper methods
+- Enhanced settings panel with wx.Choice for tracking mode selection
+
+### Credits
+- Cursor tracking modes, screen windowing, and attribute reading inspired by [Speakup](https://github.com/linux-speakup/speakup) screen reader
+
 ## [1.0.7] - 2026-02-19
 
 ### Fixed
