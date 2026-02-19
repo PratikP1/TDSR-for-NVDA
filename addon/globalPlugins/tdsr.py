@@ -144,7 +144,38 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				self.announcedHelp = True
 				# Translators: Message announced when entering a terminal application
 				ui.message(_("TDSR terminal support active. Press NVDA+shift+f1 for help."))
-	
+
+	def event_typedCharacter(self, obj, nextHandler, ch):
+		"""
+		Handle typed character events.
+
+		Announces characters as they are typed if keyEcho is enabled.
+		Uses processSymbols setting to determine whether to speak symbol names.
+		"""
+		nextHandler()
+
+		# Only handle if in a terminal and keyEcho is enabled
+		if not self.isTerminalApp(obj) or not config.conf["TDSR"]["keyEcho"]:
+			return
+
+		# Don't echo if in quiet mode
+		if config.conf["TDSR"]["quietMode"]:
+			return
+
+		# Process the character for speech
+		if ch:
+			# Use processSymbols setting to determine if we should speak symbol names
+			if config.conf["TDSR"]["processSymbols"]:
+				charToSpeak = self._processSymbol(ch)
+			else:
+				charToSpeak = ch
+
+			# Speak space as "space" instead of silence
+			if ch == ' ':
+				ui.message(_("space"))
+			else:
+				ui.message(charToSpeak)
+
 	@script(
 		# Translators: Description for the show help gesture
 		description=_("Opens the TDSR user guide"),
