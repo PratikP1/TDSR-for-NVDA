@@ -30,7 +30,7 @@ def create_addon(output_file):
 		# Add manifest.ini
 		addon_zip.write("manifest.ini", arcname="manifest.ini")
 		print("  Added: manifest.ini")
-		
+
 		# Add all files from addon directory
 		addon_path = Path("addon")
 		for file_path in addon_path.rglob("*"):
@@ -38,9 +38,15 @@ def create_addon(output_file):
 				# Skip __pycache__ and .pyc files
 				if '__pycache__' in str(file_path) or file_path.suffix == '.pyc':
 					continue
-				
+
 				# Calculate archive path (relative to addon directory)
 				arc_path = file_path.relative_to(addon_path)
+
+				# Skip the addon/__init__.py file (should not be at root level in the package)
+				if str(arc_path) == '__init__.py':
+					print(f"  Skipped: {arc_path} (not needed in NVDA addon package)")
+					continue
+
 				addon_zip.write(str(file_path), arcname=str(arc_path))
 				print(f"  Added: {arc_path}")
 	
