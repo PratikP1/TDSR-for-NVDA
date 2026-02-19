@@ -26,7 +26,7 @@ addon_info = {
 	# Minimum NVDA version supported
 	"addon_minimumNVDAVersion": "2019.3.0",
 	# Last NVDA version confirmed to be compatible
-	"addon_lastTestedNVDAVersion": "2024.1.0",
+	"addon_lastTestedNVDAVersion": "2026.1.0",
 	# Add-on update channel
 	"addon_updateChannel": None,
 }
