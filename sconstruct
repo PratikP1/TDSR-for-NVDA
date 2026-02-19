@@ -25,10 +25,7 @@ def createAddonBundleFromPath(path, dest):
 	"""
 	addonFile = zipfile.ZipFile(dest, 'w', zipfile.ZIP_DEFLATED)
 	
-	# Add manifest
-	addonFile.write("manifest.ini", arcname="manifest.ini")
-	
-	# Add all files from addon directory
+	# Add all files from addon directory (manifest.ini lives inside addon/)
 	for root, dirs, files in os.walk("addon"):
 		# Skip __pycache__ directories
 		if '__pycache__' in root:
@@ -67,7 +64,7 @@ def buildAddon(target, source, env):
 	print("Add-on package created: {}".format(outputFile))
 
 # Define build command
-addonTarget = env.Command(addonFile, ["manifest.ini"] + glob("addon/**/*", recursive=True), buildAddon)
+addonTarget = env.Command(addonFile, glob("addon/**/*", recursive=True), buildAddon)
 
 # Default build
 env.Default(addonTarget)

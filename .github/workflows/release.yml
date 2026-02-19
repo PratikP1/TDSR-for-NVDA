@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'buildVars.py'
-      - 'manifest.ini'
+      - 'addon/manifest.ini'
       - 'addon/**'
       - 'build.py'
 

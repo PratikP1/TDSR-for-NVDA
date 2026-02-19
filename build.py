@@ -27,11 +27,7 @@ def create_addon(output_file):
 	print(f"Creating add-on package: {output_file}")
 	
 	with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as addon_zip:
-		# Add manifest.ini
-		addon_zip.write("manifest.ini", arcname="manifest.ini")
-		print("  Added: manifest.ini")
-
-		# Add all files from addon directory
+		# Add all files from addon directory (manifest.ini lives inside addon/)
 		addon_path = Path("addon")
 		for file_path in addon_path.rglob("*"):
 			if file_path.is_file():
