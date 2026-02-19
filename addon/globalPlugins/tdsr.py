@@ -22,6 +22,7 @@ import addonHandler
 import wx
 import os
 from scriptHandler import script
+import globalCommands
 
 try:
 	addonHandler.initTranslation()
@@ -327,7 +328,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readLine(-1)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_previousLine(gesture)
 
 	@script(
 		# Translators: Description for reading the current line
@@ -339,7 +341,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readLine(0)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_currentLine(gesture)
 
 	@script(
 		# Translators: Description for reading the next line
@@ -351,7 +354,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readLine(1)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_nextLine(gesture)
 	
 	@script(
 		# Translators: Description for reading the previous word
@@ -363,7 +367,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readWord(-1)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_previousWord(gesture)
 
 	@script(
 		# Translators: Description for reading the current word
@@ -375,7 +380,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readWord(0)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_currentWord(gesture)
 
 	@script(
 		# Translators: Description for spelling the current word
@@ -410,7 +416,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readWord(1)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_nextWord(gesture)
 	
 	@script(
 		# Translators: Description for reading the previous character
@@ -422,7 +429,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		self._readChar(-1)
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_previousCharacter(gesture)
 
 	@script(
 		# Translators: Description for reading the current character
@@ -434,12 +442,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		# Ensure gesture is consumed by handling in try-except
-		try:
-			self._readChar(0)
-		except Exception:
-			# Even if there's an error, don't pass through the keystroke
-			ui.message(_("Unable to read character"))
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_currentCharacter(gesture)
 
 	@script(
 		# Translators: Description for reading the current character phonetically
@@ -486,12 +490,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		# Ensure gesture is consumed by handling in try-except
-		try:
-			self._readChar(1)
-		except Exception:
-			# Even if there's an error, don't pass through the keystroke
-			ui.message(_("Unable to read character"))
+		# Use NVDA's built-in review cursor functionality
+		globalCommands.commands.script_review_nextCharacter(gesture)
 	
 	@script(
 		# Translators: Description for toggling quiet mode
@@ -705,69 +705,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		api.setReviewPosition(info)
 		return info
 
-	def _readLine(self, direction):
-		"""
-		Read a line via the NVDA review cursor.
-
-		Args:
-			direction: -1 for previous, 0 for current, 1 for next.
-		"""
-		try:
-			reviewPos = self._getReviewPosition()
-			if reviewPos is None:
-				ui.message(_("Unable to read line"))
-				return
-			info = reviewPos.copy()
-			if direction != 0:
-				info.expand(textInfos.UNIT_LINE)
-				info.collapse()
-				res = info.move(textInfos.UNIT_LINE, direction)
-				if res == 0:
-					ui.message(_("Top") if direction < 0 else _("Bottom"))
-					return
-			info.expand(textInfos.UNIT_LINE)
-			api.setReviewPosition(info)
-			text = info.text
-			if text.strip():
-				ui.message(text)
-			else:
-				# Translators: Message when line is empty
-				ui.message(_("Blank"))
-		except Exception:
-			# Translators: Error message when unable to read line
-			ui.message(_("Unable to read line"))
-
-	def _readWord(self, direction):
-		"""
-		Navigate by word and read via the NVDA review cursor.
-
-		Args:
-			direction: -1 for previous, 0 for current, 1 for next.
-		"""
-		try:
-			reviewPos = self._getReviewPosition()
-			if reviewPos is None:
-				ui.message(_("Unable to read word"))
-				return
-			info = reviewPos.copy()
-			if direction != 0:
-				info.expand(textInfos.UNIT_WORD)
-				info.collapse()
-				res = info.move(textInfos.UNIT_WORD, direction)
-				if res == 0:
-					ui.message(_("Top") if direction < 0 else _("Bottom"))
-					return
-			info.expand(textInfos.UNIT_WORD)
-			api.setReviewPosition(info)
-			text = info.text
-			if text.strip():
-				ui.message(text)
-			else:
-				# Translators: Message when there are no words
-				ui.message(_("No word"))
-		except Exception:
-			ui.message(_("Unable to read word"))
-
 	def _getWordAtReview(self):
 		"""
 		Get the word at the current review position.
@@ -785,39 +722,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except Exception:
 			return None
 
-	def _readChar(self, direction):
-		"""
-		Navigate by character and read via the NVDA review cursor.
-
-		Args:
-			direction: -1 for previous, 0 for current, 1 for next.
-		"""
-		try:
-			reviewPos = self._getReviewPosition()
-			if reviewPos is None:
-				ui.message(_("No character"))
-				return
-			info = reviewPos.copy()
-			if direction != 0:
-				info.expand(textInfos.UNIT_CHARACTER)
-				info.collapse()
-				res = info.move(textInfos.UNIT_CHARACTER, direction)
-				if res == 0:
-					ui.message(_("Top") if direction < 0 else _("Bottom"))
-					return
-			info.expand(textInfos.UNIT_CHARACTER)
-			char = info.text
-			api.setReviewPosition(info)
-			if char:
-				if config.conf["TDSR"]["processSymbols"]:
-					char = self._processSymbol(char)
-				ui.message(char if char.strip() else _("space"))
-			else:
-				# Translators: Message when there is no character
-				ui.message(_("No character"))
-		except Exception:
-			ui.message(_("Unable to read character"))
-	
 	def _processSymbol(self, char):
 		"""
 		Process a symbol character for speech.
