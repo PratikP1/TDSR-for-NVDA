@@ -549,7 +549,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_currentCharacter(gesture)
+		globalCommands.commands.script_review_currentCharacter(None)
 
 	@script(
 		# Translators: Description for reading the current character phonetically
@@ -562,7 +562,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality (repeating current character gives phonetic)
-		globalCommands.commands.script_review_currentCharacter(gesture)
+		globalCommands.commands.script_review_currentCharacter(None)
 
 	@script(
 		# Translators: Description for reading the next character
@@ -575,7 +575,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_nextCharacter(gesture)
+		globalCommands.commands.script_review_nextCharacter(None)
 	
 	@script(
 		# Translators: Description for toggling quiet mode
