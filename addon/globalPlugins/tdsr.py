@@ -445,7 +445,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_previousLine(None)
+		globalCommands.commands.script_review_previousLine(gesture)
 
 	@script(
 		# Translators: Description for reading the current line
@@ -458,7 +458,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_currentLine(None)
+		globalCommands.commands.script_review_currentLine(gesture)
 
 	@script(
 		# Translators: Description for reading the next line
@@ -471,7 +471,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_nextLine(None)
+		globalCommands.commands.script_review_nextLine(gesture)
 	
 	@script(
 		# Translators: Description for reading the previous word
@@ -484,7 +484,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_previousWord(None)
+		globalCommands.commands.script_review_previousWord(gesture)
 
 	@script(
 		# Translators: Description for reading the current word
@@ -497,7 +497,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_currentWord(None)
+		globalCommands.commands.script_review_currentWord(gesture)
 
 	@script(
 		# Translators: Description for spelling the current word
@@ -510,7 +510,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_spellingCurrentWord(None)
+		globalCommands.commands.script_review_spellingCurrentWord(gesture)
 
 	@script(
 		# Translators: Description for reading the next word
@@ -523,7 +523,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_nextWord(None)
+		globalCommands.commands.script_review_nextWord(gesture)
 	
 	@script(
 		# Translators: Description for reading the previous character
@@ -536,7 +536,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_previousCharacter(None)
+		globalCommands.commands.script_review_previousCharacter(gesture)
 
 	@script(
 		# Translators: Description for reading the current character
