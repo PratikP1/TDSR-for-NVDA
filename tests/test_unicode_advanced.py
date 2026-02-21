@@ -115,7 +115,7 @@ class TestEmojiHelper(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		from addon.globalPlugins.terminalAccess import EmojiHelper
+		from globalPlugins.terminalAccess import EmojiHelper
 		self.EmojiHelper = EmojiHelper
 
 	def test_emoji_helper_initialization(self):
@@ -208,7 +208,7 @@ class TestBidiHelperIntegration(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		from addon.globalPlugins.terminalAccess import BidiHelper, UnicodeWidthHelper
+		from globalPlugins.terminalAccess import BidiHelper, UnicodeWidthHelper
 		self.BidiHelper = BidiHelper
 		self.UnicodeWidthHelper = UnicodeWidthHelper
 
@@ -245,7 +245,7 @@ class TestEmojiHelperIntegration(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		from addon.globalPlugins.terminalAccess import EmojiHelper, UnicodeWidthHelper
+		from globalPlugins.terminalAccess import EmojiHelper, UnicodeWidthHelper
 		self.EmojiHelper = EmojiHelper
 		self.UnicodeWidthHelper = UnicodeWidthHelper
 
@@ -278,7 +278,7 @@ class TestUnicodeEdgeCases(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		from addon.globalPlugins.terminalAccess import BidiHelper, EmojiHelper
+		from globalPlugins.terminalAccess import BidiHelper, EmojiHelper
 		self.BidiHelper = BidiHelper
 		self.EmojiHelper = EmojiHelper
 
