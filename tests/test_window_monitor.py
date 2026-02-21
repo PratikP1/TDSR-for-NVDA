@@ -30,13 +30,8 @@ class TestWindowMonitor(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		# Import the module under test
-		import sys
-		import os
-		addon_path = os.path.join(os.path.dirname(__file__), '..', 'addon', 'globalPlugins')
-		sys.path.insert(0, addon_path)
-
-		from terminalAccess import WindowMonitor
+		# Import after mocks are set up by conftest
+		from globalPlugins.terminalAccess import WindowMonitor
 
 		# Create mock objects
 		self.mock_terminal = MockTerminal()
@@ -179,6 +174,7 @@ class TestWindowMonitor(unittest.TestCase):
 
 	def test_extract_window_content_no_terminal(self):
 		"""Test extracting content when terminal is None."""
+		from globalPlugins.terminalAccess import WindowMonitor
 		monitor = WindowMonitor(None, self.mock_position_calculator)
 		content = monitor._extract_window_content((1, 1, 10, 80))
 		self.assertEqual(content, "")
@@ -194,7 +190,7 @@ class TestWindowMonitor(unittest.TestCase):
 		expected = "Line 1\nLine 2"
 		self.assertEqual(content, expected)
 
-	@patch('terminalAccess.ui.message')
+	@patch('globalPlugins.terminalAccess.ui.message')
 	def test_announce_change_first_content(self, mock_ui_message):
 		"""Test that first content is not announced."""
 		self.monitor._announce_change("test", "new content", None)
@@ -202,7 +198,7 @@ class TestWindowMonitor(unittest.TestCase):
 		# Should not announce first content (old_content is None)
 		mock_ui_message.assert_not_called()
 
-	@patch('terminalAccess.ui.message')
+	@patch('globalPlugins.terminalAccess.ui.message')
 	def test_announce_change_with_old_content(self, mock_ui_message):
 		"""Test announcing changes when old content exists."""
 		self.monitor._announce_change("test_window", "new content", "old content")
@@ -255,12 +251,8 @@ class TestWindowMonitorIntegration(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		import sys
-		import os
-		addon_path = os.path.join(os.path.dirname(__file__), '..', 'addon', 'globalPlugins')
-		sys.path.insert(0, addon_path)
-
-		from terminalAccess import WindowMonitor
+		# Import after mocks are set up by conftest
+		from globalPlugins.terminalAccess import WindowMonitor
 
 		self.mock_terminal = MockTerminal("Line 1\nLine 2\nLine 3")
 		self.mock_position_calculator = Mock()
@@ -285,7 +277,7 @@ class TestWindowMonitorIntegration(unittest.TestCase):
 		# Should stop cleanly
 		self.assertFalse(self.monitor.is_monitoring())
 
-	@patch('terminalAccess.ui.message')
+	@patch('globalPlugins.terminalAccess.ui.message')
 	def test_change_detection_triggers_announcement(self, mock_ui_message):
 		"""Test that content changes trigger announcements."""
 		# Add monitor
