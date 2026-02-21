@@ -12,3 +12,6 @@ pylint>=2.17.0
 # Build tools
 scons>=4.5.0
 markdown>=3.4.0
+
+# Unicode support for CJK characters
+wcwidth>=0.2.6

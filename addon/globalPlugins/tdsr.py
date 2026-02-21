@@ -159,6 +159,699 @@ class PositionCache:
 				del self._cache[key]
 
 
+class ANSIParser:
+	"""
+	Robust ANSI escape sequence parser for terminal color and formatting attributes.
+
+	Supports:
+	- Standard 8 colors (30-37 foreground, 40-47 background)
+	- Bright colors (90-97 foreground, 100-107 background)
+	- 256-color mode (ESC[38;5;Nm and ESC[48;5;Nm)
+	- RGB color mode (ESC[38;2;R;G;Bm and ESC[48;2;R;G;Bm)
+	- Formatting: bold, dim, italic, underline, blink, inverse, strikethrough
+	"""
+
+	# Standard ANSI color names
+	STANDARD_COLORS = {
+		30: 'black', 31: 'red', 32: 'green', 33: 'yellow',
+		34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white',
+		90: 'bright black', 91: 'bright red', 92: 'bright green', 93: 'bright yellow',
+		94: 'bright blue', 95: 'bright magenta', 96: 'bright cyan', 97: 'bright white',
+	}
+
+	BACKGROUND_COLORS = {
+		40: 'black', 41: 'red', 42: 'green', 43: 'yellow',
+		44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white',
+		100: 'bright black', 101: 'bright red', 102: 'bright green', 103: 'bright yellow',
+		104: 'bright blue', 105: 'bright magenta', 106: 'bright cyan', 107: 'bright white',
+	}
+
+	# Format attribute codes
+	FORMAT_CODES = {
+		1: 'bold',
+		2: 'dim',
+		3: 'italic',
+		4: 'underline',
+		5: 'blink slow',
+		6: 'blink rapid',
+		7: 'inverse',
+		8: 'hidden',
+		9: 'strikethrough',
+	}
+
+	def __init__(self):
+		"""Initialize the ANSI parser."""
+		self.reset()
+
+	def reset(self):
+		"""Reset parser state to defaults."""
+		self.foreground = None
+		self.background = None
+		self.bold = False
+		self.dim = False
+		self.italic = False
+		self.underline = False
+		self.blink = False
+		self.inverse = False
+		self.hidden = False
+		self.strikethrough = False
+
+	def parse(self, text):
+		"""
+		Parse ANSI escape sequences from text and return attributes.
+
+		Args:
+			text: Text containing ANSI escape sequences
+
+		Returns:
+			dict: Dictionary of current attributes {
+				'foreground': color name or (r, g, b) tuple,
+				'background': color name or (r, g, b) tuple,
+				'bold': bool, 'dim': bool, 'italic': bool, 'underline': bool,
+				'blink': bool, 'inverse': bool, 'hidden': bool, 'strikethrough': bool
+			}
+		"""
+		# Find all ANSI escape sequences
+		pattern = re.compile(r'\x1b\[([0-9;]+)m')
+		matches = pattern.findall(text)
+
+		for match in matches:
+			codes = [int(c) for c in match.split(';') if c]
+			self._processCodes(codes)
+
+		return self._getCurrentAttributes()
+
+	def _processCodes(self, codes):
+		"""Process a list of ANSI codes."""
+		i = 0
+		while i < len(codes):
+			code = codes[i]
+
+			# Reset all attributes
+			if code == 0:
+				self.reset()
+
+			# Foreground colors (standard and bright)
+			elif code in self.STANDARD_COLORS:
+				self.foreground = self.STANDARD_COLORS[code]
+
+			# Background colors (standard and bright)
+			elif code in self.BACKGROUND_COLORS:
+				self.background = self.BACKGROUND_COLORS[code]
+
+			# Format attributes
+			elif code in self.FORMAT_CODES:
+				attr = self.FORMAT_CODES[code]
+				if attr == 'bold':
+					self.bold = True
+				elif attr == 'dim':
+					self.dim = True
+				elif attr == 'italic':
+					self.italic = True
+				elif attr == 'underline':
+					self.underline = True
+				elif attr in ('blink slow', 'blink rapid'):
+					self.blink = True
+				elif attr == 'inverse':
+					self.inverse = True
+				elif attr == 'hidden':
+					self.hidden = True
+				elif attr == 'strikethrough':
+					self.strikethrough = True
+
+			# Reset format attributes (20-29)
+			elif code == 22:  # Normal intensity (not bold or dim)
+				self.bold = False
+				self.dim = False
+			elif code == 23:  # Not italic
+				self.italic = False
+			elif code == 24:  # Not underlined
+				self.underline = False
+			elif code == 25:  # Not blinking
+				self.blink = False
+			elif code == 27:  # Not inverse
+				self.inverse = False
+			elif code == 28:  # Not hidden
+				self.hidden = False
+			elif code == 29:  # Not strikethrough
+				self.strikethrough = False
+
+			# 256-color mode: ESC[38;5;Nm (foreground) or ESC[48;5;Nm (background)
+			elif code == 38 and i + 2 < len(codes) and codes[i + 1] == 5:
+				self.foreground = f"color{codes[i + 2]}"
+				i += 2
+			elif code == 48 and i + 2 < len(codes) and codes[i + 1] == 5:
+				self.background = f"color{codes[i + 2]}"
+				i += 2
+
+			# RGB mode: ESC[38;2;R;G;Bm (foreground) or ESC[48;2;R;G;Bm (background)
+			elif code == 38 and i + 4 < len(codes) and codes[i + 1] == 2:
+				self.foreground = (codes[i + 2], codes[i + 3], codes[i + 4])
+				i += 4
+			elif code == 48 and i + 4 < len(codes) and codes[i + 1] == 2:
+				self.background = (codes[i + 2], codes[i + 3], codes[i + 4])
+				i += 4
+
+			# Default foreground/background
+			elif code == 39:
+				self.foreground = None
+			elif code == 49:
+				self.background = None
+
+			i += 1
+
+	def _getCurrentAttributes(self):
+		"""Get current attribute state as a dictionary."""
+		return {
+			'foreground': self.foreground,
+			'background': self.background,
+			'bold': self.bold,
+			'dim': self.dim,
+			'italic': self.italic,
+			'underline': self.underline,
+			'blink': self.blink,
+			'inverse': self.inverse,
+			'hidden': self.hidden,
+			'strikethrough': self.strikethrough,
+		}
+
+	def formatAttributes(self, mode='detailed'):
+		"""
+		Format current attributes as human-readable text.
+
+		Args:
+			mode: 'brief', 'detailed', or 'change-only'
+
+		Returns:
+			str: Formatted attribute description
+		"""
+		attrs = self._getCurrentAttributes()
+		parts = []
+
+		if mode == 'brief':
+			# Brief mode: just colors
+			if attrs['foreground']:
+				if isinstance(attrs['foreground'], tuple):
+					parts.append(f"RGB color")
+				else:
+					parts.append(attrs['foreground'])
+			if attrs['background']:
+				if isinstance(attrs['background'], tuple):
+					parts.append(f"background RGB")
+				else:
+					parts.append(f"{attrs['background']} background")
+
+		else:  # detailed mode
+			# Foreground color
+			if attrs['foreground']:
+				if isinstance(attrs['foreground'], tuple):
+					r, g, b = attrs['foreground']
+					parts.append(f"RGB({r},{g},{b}) foreground")
+				else:
+					parts.append(f"{attrs['foreground']} foreground")
+
+			# Background color
+			if attrs['background']:
+				if isinstance(attrs['background'], tuple):
+					r, g, b = attrs['background']
+					parts.append(f"RGB({r},{g},{b}) background")
+				else:
+					parts.append(f"{attrs['background']} background")
+
+			# Format attributes
+			format_attrs = []
+			if attrs['bold']:
+				format_attrs.append('bold')
+			if attrs['dim']:
+				format_attrs.append('dim')
+			if attrs['italic']:
+				format_attrs.append('italic')
+			if attrs['underline']:
+				format_attrs.append('underline')
+			if attrs['blink']:
+				format_attrs.append('blink')
+			if attrs['inverse']:
+				format_attrs.append('inverse')
+			if attrs['strikethrough']:
+				format_attrs.append('strikethrough')
+
+			if format_attrs:
+				parts.append(', '.join(format_attrs))
+
+		return ', '.join(parts) if parts else 'default attributes'
+
+	@staticmethod
+	def stripANSI(text):
+		"""
+		Remove all ANSI escape sequences from text.
+
+		Args:
+			text: Text containing ANSI codes
+
+		Returns:
+			str: Text with ANSI codes removed
+		"""
+		# Remove all ANSI escape sequences
+		ansi_pattern = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+		return ansi_pattern.sub('', text)
+
+
+class UnicodeWidthHelper:
+	"""
+	Helper class for calculating display width of Unicode text.
+
+	Handles:
+	- CJK characters (2 columns wide)
+	- Combining characters (0 columns wide)
+	- Control characters
+	- Standard ASCII (1 column wide)
+	"""
+
+	@staticmethod
+	def getCharWidth(char):
+		"""
+		Get display width of a single character.
+
+		Args:
+			char: Single character string
+
+		Returns:
+			int: Display width (0, 1, or 2 columns)
+		"""
+		try:
+			import wcwidth
+			width = wcwidth.wcwidth(char)
+			# wcwidth returns -1 for control characters, treat as 0
+			return max(0, width) if width is not None else 1
+		except ImportError:
+			# Fallback if wcwidth not available: assume 1 column
+			return 1
+		except Exception:
+			# For any other error, assume 1 column
+			return 1
+
+	@staticmethod
+	def getTextWidth(text):
+		"""
+		Calculate total display width of a text string.
+
+		Args:
+			text: Text string
+
+		Returns:
+			int: Total display width in columns
+		"""
+		try:
+			import wcwidth
+			width = wcwidth.wcswidth(text)
+			# wcswidth returns -1 if text contains control characters
+			if width >= 0:
+				return width
+			# Fall back to character-by-character calculation
+			total = 0
+			for char in text:
+				char_width = wcwidth.wcwidth(char)
+				if char_width >= 0:
+					total += char_width
+			return total
+		except ImportError:
+			# Fallback if wcwidth not available: assume 1 column per char
+			return len(text)
+		except Exception:
+			# For any other error, fall back to length
+			return len(text)
+
+	@staticmethod
+	def extractColumnRange(text, startCol, endCol):
+		"""
+		Extract text from specific column range, accounting for Unicode width.
+
+		Args:
+			text: Source text string
+			startCol: Starting column (1-based)
+			endCol: Ending column (1-based, inclusive)
+
+		Returns:
+			str: Text within the specified column range
+		"""
+		if not text:
+			return ""
+
+		result = []
+		currentCol = 1
+		i = 0
+
+		while i < len(text):
+			char = text[i]
+			charWidth = UnicodeWidthHelper.getCharWidth(char)
+
+			# Check if character falls within the column range
+			charEndCol = currentCol + charWidth - 1
+
+			if charEndCol < startCol:
+				# Character is before the range
+				pass
+			elif currentCol > endCol:
+				# Character is after the range, we're done
+				break
+			else:
+				# Character overlaps with the range
+				result.append(char)
+
+			currentCol += charWidth
+			i += 1
+
+		return ''.join(result)
+
+	@staticmethod
+	def findColumnPosition(text, targetCol):
+		"""
+		Find the string index that corresponds to a target column position.
+
+		Args:
+			text: Source text string
+			targetCol: Target column position (1-based)
+
+		Returns:
+			int: String index corresponding to the column position
+		"""
+		if not text:
+			return 0
+
+		currentCol = 1
+		for i, char in enumerate(text):
+			if currentCol >= targetCol:
+				return i
+			charWidth = UnicodeWidthHelper.getCharWidth(char)
+			currentCol += charWidth
+
+		return len(text)
+
+
+class WindowDefinition:
+	"""
+	Definition of a window region in terminal output.
+
+	Used for tracking specific regions of terminal display (e.g., tmux panes,
+	vim status line, htop process list).
+	"""
+
+	def __init__(self, name, top, bottom, left, right, mode='announce', enabled=True):
+		"""
+		Initialize a window definition.
+
+		Args:
+			name: Window name (e.g., "main pane", "status line")
+			top: Top row (1-based)
+			bottom: Bottom row (1-based)
+			left: Left column (1-based)
+			right: Right column (1-based)
+			mode: Window mode ('announce', 'silent', 'monitor')
+			enabled: Whether window is currently active
+		"""
+		self.name = name
+		self.top = top
+		self.bottom = bottom
+		self.left = left
+		self.right = right
+		self.mode = mode  # 'announce' = read content, 'silent' = suppress, 'monitor' = track changes
+		self.enabled = enabled
+
+	def contains(self, row, col):
+		"""
+		Check if a position is within this window.
+
+		Args:
+			row: Row number (1-based)
+			col: Column number (1-based)
+
+		Returns:
+			bool: True if position is within window bounds
+		"""
+		return (self.enabled and
+				self.top <= row <= self.bottom and
+				self.left <= col <= self.right)
+
+	def toDict(self):
+		"""Convert window definition to dictionary for serialization."""
+		return {
+			'name': self.name,
+			'top': self.top,
+			'bottom': self.bottom,
+			'left': self.left,
+			'right': self.right,
+			'mode': self.mode,
+			'enabled': self.enabled,
+		}
+
+	@classmethod
+	def fromDict(cls, data):
+		"""Create window definition from dictionary."""
+		return cls(
+			name=data.get('name', ''),
+			top=data.get('top', 0),
+			bottom=data.get('bottom', 0),
+			left=data.get('left', 0),
+			right=data.get('right', 0),
+			mode=data.get('mode', 'announce'),
+			enabled=data.get('enabled', True),
+		)
+
+
+class ApplicationProfile:
+	"""
+	Application-specific configuration profile for terminal applications.
+
+	Allows customizing TDSR behavior for different applications (vim, tmux, htop, etc.).
+	"""
+
+	def __init__(self, appName, displayName=None):
+		"""
+		Initialize an application profile.
+
+		Args:
+			appName: Application identifier (e.g., "vim", "tmux", "htop")
+			displayName: Human-readable name (e.g., "Vim/Neovim")
+		"""
+		self.appName = appName
+		self.displayName = displayName or appName
+
+		# Settings overrides (None = use global setting)
+		self.punctuationLevel = None
+		self.cursorTrackingMode = None
+		self.keyEcho = None
+		self.linePause = None
+		self.processSymbols = None
+		self.repeatedSymbols = None
+		self.repeatedSymbolsValues = None
+		self.cursorDelay = None
+		self.quietMode = None
+
+		# Window definitions (list of WindowDefinition objects)
+		self.windows = []
+
+		# Custom gestures (dict of gesture -> function name)
+		self.customGestures = {}
+
+	def addWindow(self, name, top, bottom, left, right, mode='announce'):
+		"""Add a window definition to this profile."""
+		window = WindowDefinition(name, top, bottom, left, right, mode)
+		self.windows.append(window)
+		return window
+
+	def getWindowAtPosition(self, row, col):
+		"""Get the window containing the specified position."""
+		for window in self.windows:
+			if window.contains(row, col):
+				return window
+		return None
+
+	def toDict(self):
+		"""Convert profile to dictionary for serialization."""
+		return {
+			'appName': self.appName,
+			'displayName': self.displayName,
+			'punctuationLevel': self.punctuationLevel,
+			'cursorTrackingMode': self.cursorTrackingMode,
+			'keyEcho': self.keyEcho,
+			'linePause': self.linePause,
+			'processSymbols': self.processSymbols,
+			'repeatedSymbols': self.repeatedSymbols,
+			'repeatedSymbolsValues': self.repeatedSymbolsValues,
+			'cursorDelay': self.cursorDelay,
+			'quietMode': self.quietMode,
+			'windows': [w.toDict() for w in self.windows],
+			'customGestures': self.customGestures,
+		}
+
+	@classmethod
+	def fromDict(cls, data):
+		"""Create profile from dictionary."""
+		profile = cls(data.get('appName', ''), data.get('displayName'))
+		profile.punctuationLevel = data.get('punctuationLevel')
+		profile.cursorTrackingMode = data.get('cursorTrackingMode')
+		profile.keyEcho = data.get('keyEcho')
+		profile.linePause = data.get('linePause')
+		profile.processSymbols = data.get('processSymbols')
+		profile.repeatedSymbols = data.get('repeatedSymbols')
+		profile.repeatedSymbolsValues = data.get('repeatedSymbolsValues')
+		profile.cursorDelay = data.get('cursorDelay')
+		profile.quietMode = data.get('quietMode')
+
+		# Restore windows
+		for winData in data.get('windows', []):
+			profile.windows.append(WindowDefinition.fromDict(winData))
+
+		profile.customGestures = data.get('customGestures', {})
+		return profile
+
+
+class ProfileManager:
+	"""
+	Manager for application-specific profiles.
+
+	Handles profile creation, detection, loading, and application.
+	"""
+
+	def __init__(self):
+		"""Initialize the profile manager with default profiles."""
+		self.profiles = {}
+		self.activeProfile = None
+		self._initializeDefaultProfiles()
+
+	def _initializeDefaultProfiles(self):
+		"""Create default profiles for popular terminal applications."""
+
+		# Vim/Neovim profile
+		vim = ApplicationProfile('vim', 'Vim/Neovim')
+		vim.punctuationLevel = PUNCT_MOST  # More punctuation for code
+		vim.cursorTrackingMode = CT_WINDOW  # Use window tracking
+		# Silence bottom two lines (status line and command line)
+		vim.addWindow('editor', 1, 9999, 1, 9999, mode='announce')
+		vim.addWindow('status', 9999, 9999, 1, 9999, mode='silent')
+		self.profiles['vim'] = vim
+		self.profiles['nvim'] = vim  # Same profile for neovim
+
+		# tmux profile
+		tmux = ApplicationProfile('tmux', 'tmux (Terminal Multiplexer)')
+		tmux.cursorTrackingMode = CT_STANDARD
+		# Status bar at bottom (typically last line)
+		tmux.addWindow('status', 9999, 9999, 1, 9999, mode='silent')
+		self.profiles['tmux'] = tmux
+
+		# htop profile
+		htop = ApplicationProfile('htop', 'htop (Process Viewer)')
+		htop.repeatedSymbols = False  # Lots of repeated characters in bars
+		# Header area (first ~4 lines with CPU/Memory meters)
+		htop.addWindow('header', 1, 4, 1, 9999, mode='announce')
+		# Process list (main area)
+		htop.addWindow('processes', 5, 9999, 1, 9999, mode='announce')
+		self.profiles['htop'] = htop
+
+		# less/more pager profile
+		less = ApplicationProfile('less', 'less/more (Pager)')
+		less.quietMode = True  # Reduce verbosity for reading
+		less.keyEcho = False  # Don't echo navigation keys
+		self.profiles['less'] = less
+		self.profiles['more'] = less
+
+		# git profile (for git diff, log, etc.)
+		git = ApplicationProfile('git', 'Git')
+		git.punctuationLevel = PUNCT_MOST  # Show symbols in diffs
+		git.repeatedSymbols = False  # Many dashes and equals signs
+		self.profiles['git'] = git
+
+		# nano editor profile
+		nano = ApplicationProfile('nano', 'GNU nano')
+		nano.cursorTrackingMode = CT_STANDARD
+		# Silence bottom two lines (status and shortcuts)
+		nano.addWindow('editor', 1, 9997, 1, 9999, mode='announce')
+		nano.addWindow('shortcuts', 9998, 9999, 1, 9999, mode='silent')
+		self.profiles['nano'] = nano
+
+		# irssi (IRC client) profile
+		irssi = ApplicationProfile('irssi', 'irssi (IRC Client)')
+		irssi.punctuationLevel = PUNCT_SOME  # Basic punctuation for chat
+		irssi.linePause = False  # Fast reading for chat
+		# Status bar at bottom
+		irssi.addWindow('status', 9999, 9999, 1, 9999, mode='silent')
+		self.profiles['irssi'] = irssi
+
+	def detectApplication(self, focusObject):
+		"""
+		Detect the current terminal application.
+
+		Args:
+			focusObject: NVDA focus object
+
+		Returns:
+			str: Application name or 'default'
+		"""
+		try:
+			# Try to get app name from app module
+			if hasattr(focusObject, 'appModule') and hasattr(focusObject.appModule, 'appName'):
+				appName = focusObject.appModule.appName.lower()
+
+				# Check if we have a profile for this app
+				if appName in self.profiles:
+					return appName
+
+			# Try to detect from window title
+			if hasattr(focusObject, 'name'):
+				title = focusObject.name.lower()
+
+				# Check for common patterns
+				if 'vim' in title or 'nvim' in title:
+					return 'vim'
+				elif 'tmux' in title:
+					return 'tmux'
+				elif 'htop' in title:
+					return 'htop'
+				elif 'less' in title or 'more' in title:
+					return 'less'
+				elif 'git' in title:
+					return 'git'
+				elif 'nano' in title:
+					return 'nano'
+				elif 'irssi' in title:
+					return 'irssi'
+
+		except Exception:
+			pass
+
+		return 'default'
+
+	def getProfile(self, appName):
+		"""Get profile for specified application."""
+		return self.profiles.get(appName)
+
+	def setActiveProfile(self, appName):
+		"""Set the currently active profile."""
+		self.activeProfile = self.profiles.get(appName)
+
+	def addProfile(self, profile):
+		"""Add or update a profile."""
+		self.profiles[profile.appName] = profile
+
+	def removeProfile(self, appName):
+		"""Remove a profile."""
+		if appName in self.profiles and appName not in ['vim', 'tmux', 'htop', 'less', 'git', 'nano', 'irssi']:
+			del self.profiles[appName]
+
+	def exportProfile(self, appName):
+		"""Export profile to dictionary."""
+		profile = self.profiles.get(appName)
+		if profile:
+			return profile.toDict()
+		return None
+
+	def importProfile(self, data):
+		"""Import profile from dictionary."""
+		profile = ApplicationProfile.fromDict(data)
+		self.addProfile(profile)
+		return profile
+
+
 # Input validation helper functions for security hardening
 def _validateInteger(value, minValue, maxValue, default, fieldName):
 	"""
@@ -299,6 +992,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastKnownPosition = None  # (bookmark, row, col) for incremental tracking
 		self._backgroundCalculationThread = None  # Thread for long-running operations
 
+		# Application profile management
+		self._profileManager = ProfileManager()
+		self._currentProfile = None
+
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
 
@@ -388,6 +1085,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		Announces help availability when entering a terminal for the first time.
 		Binds the review cursor to the focused terminal window.
+		Detects and activates application-specific profiles.
 		"""
 		nextHandler()
 
@@ -401,6 +1099,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Clear position cache when switching terminals
 			self._positionCache.clear()
 			self._lastKnownPosition = None
+
+			# Detect and activate application profile
+			detectedApp = self._profileManager.detectApplication(obj)
+			if detectedApp != 'default':
+				profile = self._profileManager.getProfile(detectedApp)
+				if profile:
+					self._currentProfile = profile
+					import logHandler
+					logHandler.log.info(f"TDSR: Activated profile for {profile.displayName}")
+			else:
+				self._currentProfile = None
 
 			# Bind review cursor to the terminal; try caret first, fall back to last position
 			try:
@@ -630,16 +1339,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _announceWindowCursor(self, obj):
 		"""
-		Window tracking - only announce if cursor is within defined window.
+		Window tracking - check both global window and profile-specific windows.
 
 		Args:
 			obj: The terminal object.
 		"""
-		if not config.conf["TDSR"]["windowEnabled"]:
-			# Window not enabled, fall back to standard tracking
-			self._announceStandardCursor(obj)
-			return
-
 		try:
 			# Get the current caret position
 			info = obj.makeTextInfo(textInfos.POSITION_CARET)
@@ -654,23 +1358,38 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 			self._lastCaretPosition = currentPos
 
-			# Check if position is within window bounds
-			windowTop = config.conf["TDSR"]["windowTop"]
-			windowBottom = config.conf["TDSR"]["windowBottom"]
-			windowLeft = config.conf["TDSR"]["windowLeft"]
-			windowRight = config.conf["TDSR"]["windowRight"]
+			# First, check if we have an active profile with window definitions
+			if self._currentProfile and self._currentProfile.windows:
+				window = self._currentProfile.getWindowAtPosition(currentRow, currentCol)
+				if window:
+					if window.mode == 'silent':
+						# Silent window - don't announce
+						return
+					elif window.mode == 'announce':
+						# Announce window - read normally
+						self._announceStandardCursor(obj)
+						return
+					# For 'monitor' mode, could add change tracking in future
 
-			# If window not properly defined, fall back to standard
-			if windowBottom == 0 or windowRight == 0:
-				self._announceStandardCursor(obj)
-				return
+			# Check global window setting
+			if config.conf["TDSR"]["windowEnabled"]:
+				windowTop = config.conf["TDSR"]["windowTop"]
+				windowBottom = config.conf["TDSR"]["windowBottom"]
+				windowLeft = config.conf["TDSR"]["windowLeft"]
+				windowRight = config.conf["TDSR"]["windowRight"]
 
-			# Check if within window boundaries
-			if (windowTop <= currentRow <= windowBottom and
-				windowLeft <= currentCol <= windowRight):
-				# Within window - announce normally
-				self._announceStandardCursor(obj)
-			# else: Outside window - silent
+				# If window is properly defined
+				if windowBottom > 0 and windowRight > 0:
+					# Check if within window boundaries
+					if (windowTop <= currentRow <= windowBottom and
+						windowLeft <= currentCol <= windowRight):
+						# Within window - announce normally
+						self._announceStandardCursor(obj)
+					# else: Outside window - silent
+					return
+
+			# No window restrictions - announce normally
+			self._announceStandardCursor(obj)
 
 		except Exception:
 			# On error, fall back to standard tracking
@@ -1161,7 +1880,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		gesture="kb:NVDA+alt+shift+a"
 	)
 	def script_readAttributes(self, gesture):
-		"""Read color and formatting attributes at cursor position."""
+		"""Read color and formatting attributes at cursor position using enhanced ANSI parser."""
 		if not self.isTerminalApp():
 			gesture.send()
 			return
@@ -1172,71 +1891,35 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				ui.message(_("Unable to read attributes"))
 				return
 
-			# Expand to get character at cursor
-			info = reviewPos.copy()
-			info.expand(textInfos.UNIT_CHARACTER)
-			char = info.text
+			# Get text from start of line to cursor to capture all ANSI codes
+			lineStart = reviewPos.copy()
+			lineStart.expand(textInfos.UNIT_LINE)
+			lineStart.collapse()
 
-			# Try to detect ANSI color codes in the surrounding text
-			lineInfo = reviewPos.copy()
-			lineInfo.expand(textInfos.UNIT_LINE)
-			lineText = lineInfo.text
+			# Get text from line start to cursor
+			textToCursor = lineStart.copy()
+			textToCursor.setEndPoint(reviewPos, "endToStart")
+			textToCursor.expand(textInfos.UNIT_CHARACTER)
 
-			# Simple ANSI code detection
-			colorPattern = re.compile(r'\x1b\[([0-9;]+)m')
-			matches = colorPattern.findall(lineText)
+			# Get the text with ANSI codes
+			text = textToCursor.text
 
-			if matches:
-				# Parse the most recent color code
-				colorCode = matches[-1] if matches else None
-				attributeMsg = self._parseColorCode(colorCode)
+			if text:
+				# Parse ANSI codes using enhanced parser
+				parser = ANSIParser()
+				parser.parse(text)
+
+				# Format attributes in detailed mode
+				attributeMsg = parser.formatAttributes(mode='detailed')
 				ui.message(attributeMsg)
 			else:
-				# Translators: Message when no color attributes detected
-				ui.message(_("No color attributes detected"))
-		except Exception:
+				# Translators: Message when no text at cursor
+				ui.message(_("No text at cursor"))
+
+		except Exception as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Error reading attributes: {e}")
 			ui.message(_("Unable to read attributes"))
-
-	def _parseColorCode(self, code):
-		"""
-		Parse ANSI color code and return human-readable description.
-
-		Args:
-			code: The ANSI color code (e.g., "31" for red).
-
-		Returns:
-			str: Human-readable color/attribute description.
-		"""
-		if not code:
-			return _("Default color")
-
-		# Basic ANSI color codes
-		colorMap = {
-			'30': _('Black text'),
-			'31': _('Red text'),
-			'32': _('Green text'),
-			'33': _('Yellow text'),
-			'34': _('Blue text'),
-			'35': _('Magenta text'),
-			'36': _('Cyan text'),
-			'37': _('White text'),
-			'40': _('Black background'),
-			'41': _('Red background'),
-			'42': _('Green background'),
-			'43': _('Yellow background'),
-			'44': _('Blue background'),
-			'45': _('Magenta background'),
-			'46': _('Cyan background'),
-			'47': _('White background'),
-			'1': _('Bold'),
-			'4': _('Underline'),
-			'7': _('Inverse video'),
-			'0': _('Reset'),
-		}
-
-		codes = code.split(';')
-		attributes = [colorMap.get(c, c) for c in codes]
-		return ', '.join(attributes)
 
 	# Phase 1 Quick Win Features
 
@@ -1933,7 +2616,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _performRectangularCopy(self, terminal, startRow, endRow, startCol, endCol):
 		"""
-		Perform the actual rectangular copy operation.
+		Perform the actual rectangular copy operation with Unicode/CJK support.
 
 		Args:
 			terminal: Terminal object
@@ -1955,14 +2638,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			lineInfo.expand(textInfos.UNIT_LINE)
 			lineText = lineInfo.text.rstrip('\n\r')
 
-			# Extract column range (convert to 0-based indexing)
-			startIdx = max(0, startCol - 1)
-			endIdx = min(len(lineText), endCol)
+			# Strip ANSI codes for accurate column extraction
+			cleanText = ANSIParser.stripANSI(lineText)
 
-			if startIdx < len(lineText):
-				columnText = lineText[startIdx:endIdx]
-			else:
-				columnText = ''  # Line too short
+			# Extract column range using Unicode-aware helper (1-based columns)
+			columnText = UnicodeWidthHelper.extractColumnRange(cleanText, startCol, endCol)
 
 			lines.append(columnText)
 
