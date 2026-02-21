@@ -1,0 +1,14 @@
+# Development dependencies for TDSR for NVDA testing
+
+# Testing framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+
+# Code quality
+flake8>=6.0.0
+pylint>=2.17.0
+
+# Build tools
+scons>=4.5.0
+markdown>=3.4.0
