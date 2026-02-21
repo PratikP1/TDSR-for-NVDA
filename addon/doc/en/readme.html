@@ -157,8 +157,8 @@
 				<td>Open this user guide</td>
 			</tr>
 			<tr>
-				<td><code>NVDA+Alt+C</code></td>
-				<td>Open TDSR settings</td>
+				<td><code>NVDA+Alt+Shift+S</code></td>
+				<td>Open Terminal Access settings</td>
 			</tr>
 		</tbody>
 	</table>
@@ -237,12 +237,120 @@
 				<td>Read current character phonetically (e.g., "alpha" for "a")</td>
 			</tr>
 			<tr>
+				<td><code>NVDA+Alt+Comma</code> (three times)</td>
+				<td>Announce character code (decimal, hex, and name)</td>
+			</tr>
+			<tr>
 				<td><code>NVDA+Alt+Period</code></td>
 				<td>Read next character</td>
 			</tr>
 		</tbody>
 	</table>
-	
+
+	<h3>Advanced Reading</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+A</code></td>
+				<td>Continuous reading (say all) from cursor to end of buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+I</code> (twice)</td>
+				<td>Announce line indentation level</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+P</code></td>
+				<td>Announce current row and column position</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Screen Edge Navigation</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Home</code></td>
+				<td>Jump to first character of current line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+End</code></td>
+				<td>Jump to last character of current line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+PageUp</code></td>
+				<td>Jump to top of terminal buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+PageDown</code></td>
+				<td>Jump to bottom of terminal buffer</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Directional Reading</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Left Arrow</code></td>
+				<td>Read from cursor to beginning of line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Right Arrow</code></td>
+				<td>Read from cursor to end of line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Up Arrow</code></td>
+				<td>Read from cursor to top of buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Down Arrow</code></td>
+				<td>Read from cursor to bottom of buffer</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Punctuation & Tracking</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+[</code></td>
+				<td>Decrease punctuation level (None/Some/Most/All)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+]</code></td>
+				<td>Increase punctuation level (None/Some/Most/All)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Asterisk</code></td>
+				<td>Cycle cursor tracking mode (Off/Standard/Highlight/Window)</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<h3>Selection and Copy</h3>
 	<table>
 		<thead>
@@ -254,11 +362,23 @@
 		<tbody>
 			<tr>
 				<td><code>NVDA+Alt+R</code></td>
-				<td>Start or end selection (text is automatically copied to clipboard when end marker is set)</td>
+				<td>Toggle mark for selection (press 3 times: start, end, clear)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+C</code></td>
+				<td>Copy linear selection (requires marks to be set)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+C</code></td>
+				<td>Copy rectangular selection (requires marks to be set)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+X</code></td>
+				<td>Clear selection marks</td>
 			</tr>
 			<tr>
 				<td><code>NVDA+Alt+V</code></td>
-				<td>Enter copy mode (then press L for line, S for screen)</td>
+				<td>Enter legacy copy mode (then press L for line, S for screen)</td>
 			</tr>
 		</tbody>
 	</table>
@@ -266,9 +386,114 @@
 		<strong>Note:</strong> When using marker-based selection with <code>NVDA+Alt+R</code>,
 		press it once to set the start marker, navigate to the desired end position using review
 		cursor commands, then press <code>NVDA+Alt+R</code> again to set the end marker.
-		The text between the markers will be automatically copied to the clipboard.
+		Press <code>NVDA+Alt+C</code> to copy linear selection or <code>NVDA+Alt+Shift+C</code>
+		to copy rectangular (column-based) selection.
 	</p>
-	
+
+	<h3>Window Management</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+F2</code></td>
+				<td>Set screen window boundaries (press twice: start position, then end position)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+F3</code></td>
+				<td>Clear screen window</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Plus</code></td>
+				<td>Read window content</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+A</code></td>
+				<td>Read text attributes and colors at cursor</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Bookmarks (v1.0.29+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+0-9</code></td>
+				<td>Set bookmark at current position</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+0-9</code></td>
+				<td>Jump to bookmark</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+B</code></td>
+				<td>List all bookmarks</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Command History (v1.0.31+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+H</code></td>
+				<td>Scan terminal output to detect and store command history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Up Arrow</code></td>
+				<td>Navigate to previous command in history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Down Arrow</code></td>
+				<td>Navigate to next command in history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+L</code></td>
+				<td>List all commands in history</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Search (v1.0.30+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Control+F</code></td>
+				<td>Search terminal output for text pattern</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+F3</code></td>
+				<td>Jump to next search match</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Shift+F3</code></td>
+				<td>Jump to previous search match</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<h3>Modes and Toggles</h3>
 	<table>
 		<thead>
@@ -287,9 +512,9 @@
 	
 	<h2 id="settings">Settings</h2>
 	<p>
-		TDSR settings can be accessed through NVDA's preferences dialog. Press <code>NVDA+N</code> 
-		to open the NVDA menu, select Preferences, then Settings. Alternatively, use 
-		<code>NVDA+Alt+C</code> while in a terminal to jump directly to the Terminal Settings category.
+		Terminal Access settings can be accessed through NVDA's preferences dialog. Press <code>NVDA+N</code>
+		to open the NVDA menu, select Preferences, then Settings. Alternatively, use
+		<code>NVDA+Alt+Shift+S</code> while in a terminal to jump directly to the Terminal Settings category.
 	</p>
 	
 	<h3>Available Settings</h3>
