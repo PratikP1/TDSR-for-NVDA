@@ -1,15 +1,15 @@
 # TDSR for NVDA - Future Enhancements Analysis
 
-**Document Version:** 5.0
-**Current Version:** 1.0.28+
+**Document Version:** 6.0
+**Current Version:** 1.0.30+
 **Analysis Date:** 2026-02-21
-**Status:** Updated after completing Sections 1-6.1, 9.1 implementation
+**Status:** Updated after completing Sections 1-6.1, 8.2-8.3, 9.1 implementation
 
 ---
 
 ## Executive Summary
 
-This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.28+. This analysis compares the current implementation against:
+This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.30+. This analysis compares the current implementation against:
 
 - SPEAKUP_SPECS_REQUIREMENTS.md - Speakup-inspired feature specifications
 - REMAINING_WORK.md - Comprehensive remaining work analysis
@@ -18,7 +18,7 @@ This document analyzes all specification and requirement documents to identify f
 
 ### Implementation Status Overview
 
-**Current Completion: ~98%** of planned features
+**Current Completion: ~99%** of planned features
 
 #### Completed Features ✅
 - Phase 1: Quick Wins (100%)
@@ -59,15 +59,23 @@ This document analyzes all specification and requirement documents to identify f
   - WindowMonitor class ✅ (v1.0.28)
   - Multi-window monitoring with change detection ✅ (v1.0.28)
   - Background polling with rate limiting ✅ (v1.0.28)
+- **Section 8.2: Output Filtering and Search** (100%)
+  - OutputSearchManager class ✅ (v1.0.30)
+  - Text and regex search ✅ (v1.0.30)
+  - Navigate matches with keyboard shortcuts ✅ (v1.0.30)
+- **Section 8.3: Bookmark Functionality** (100%)
+  - BookmarkManager class ✅ (v1.0.29)
+  - Quick number bookmarks (0-9) ✅ (v1.0.29)
+  - List and navigate bookmarks ✅ (v1.0.29)
 - **Section 9.1: Documentation** (100%)
   - Advanced User Guide ✅ (v1.0.26+)
   - FAQ document ✅ (v1.0.26+)
   - GitHub issue templates ✅ (v1.0.26+)
 
-#### Remaining Features 🔄 (All LOW Priority)
-- Section 7: Translation/internationalization
-- Section 8: Community feature requests (command history, bookmarks, search)
-- Section 9.2-9.4: Video tutorials, community forums
+#### Remaining Features 🔄 (All LOW Priority or Not Planned)
+- Section 7: Translation/internationalization (LOW - future consideration)
+- Section 8.1: Command history navigation (LOW - requires complex terminal parsing)
+- Section 9.2-9.4: Video tutorials, community forums (NOT PLANNED per user request)
 
 ---
 
@@ -909,47 +917,72 @@ class CommandHistoryManager:
 
 ### 8.2 Output Filtering and Search
 
-**Status:** ⏳ NOT IN SPECS
-**Source:** Potential community request
+**Status:** ✅ IMPLEMENTED (v1.0.30)
+**Source:** Community feature request
 **Estimated Effort:** 2-3 weeks
-**Priority:** TBD
+**Priority:** LOW
 
-**Potential Implementation:**
+**Implementation Note:** Fully implemented in v1.0.30 with OutputSearchManager class:
+- Text search with case sensitivity option
+- Regular expression support for advanced patterns
+- Navigate forward/backward through matches with wrap-around
+- Jump to first/last match
+- Interactive search dialog (NVDA+Control+F)
+- Keyboard shortcuts: F3 (next), Shift+F3 (previous)
+- Location: `addon/globalPlugins/tdsr.py` lines 2839-3046 (OutputSearchManager)
+- Location: `addon/globalPlugins/tdsr.py` lines 5089-5213 (search gestures)
+
+**Implementation:**
 ```python
-def script_searchOutput(self, gesture):
-    """Search terminal output for pattern."""
-    # Show search dialog
-    # Find matches in terminal buffer
-    # Navigate between matches
-    # Announce results
-    pass
+# ✅ IMPLEMENTED in v1.0.30
+class OutputSearchManager:
+    """Search and filter terminal output with pattern matching."""
+
+    def search(self, pattern, case_sensitive=False, use_regex=False):
+        """Search for pattern in terminal output."""
+        # Full implementation with regex support
+
+    def next_match(self):
+        """Jump to next match."""
+
+    def previous_match(self):
+        """Jump to previous match."""
+
+    # Additional methods: first_match, last_match, get_match_count, etc.
 ```
 
 ### 8.3 Bookmark/Marker Functionality
 
-**Status:** ⏳ NOT IN SPECS
-**Source:** Potential community request
+**Status:** ✅ IMPLEMENTED (v1.0.29)
+**Source:** Community feature request
 **Estimated Effort:** 1-2 weeks
-**Priority:** TBD
+**Priority:** LOW
 
-**Potential Implementation:**
+**Implementation Note:** Fully implemented in v1.0.29 with BookmarkManager class:
+- Set named bookmarks at any position (0-9 for quick bookmarks)
+- Jump to bookmarks instantly
+- List all bookmarks
+- Remove bookmarks
+- Maximum 50 bookmarks per terminal
+- Keyboard shortcuts: NVDA+Alt+Shift+0-9 (set), NVDA+Alt+0-9 (jump), NVDA+Alt+Shift+B (list)
+- Location: `addon/globalPlugins/tdsr.py` lines 2694-2837 (BookmarkManager)
+- Location: `addon/globalPlugins/tdsr.py` lines 4967-5087 (bookmark gestures)
+
+**Implementation:**
 ```python
+# ✅ IMPLEMENTED in v1.0.29
 class BookmarkManager:
     """Manage bookmarks/markers in terminal output."""
 
-    def __init__(self):
-        self._bookmarks = {}  # name -> TextInfo.bookmark
-
-    def setBookmark(self, name):
+    def set_bookmark(self, name):
         """Set bookmark at current position."""
-        pos = api.getReviewPosition()
-        self._bookmarks[name] = pos.bookmark
+        # Full implementation with validation
 
-    def jumpToBookmark(self, name):
+    def jump_to_bookmark(self, name):
         """Jump to named bookmark."""
-        if name in self._bookmarks:
-            pos = self._boundTerminal.makeTextInfo(self._bookmarks[name])
-            api.setReviewPosition(pos)
+        # Full implementation with error handling
+
+    # Additional methods: remove_bookmark, list_bookmarks, clear_all, etc.
 ```
 
 ---
