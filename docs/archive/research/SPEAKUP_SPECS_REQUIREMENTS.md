@@ -5,11 +5,11 @@
 This document consolidates the research, analysis, and specifications for implementing Speakup-inspired features in TDSR for NVDA, with special focus on the API requirements for rectangular selection and window coordinate tracking.
 
 **Related Documents**:
-- `/home/runner/work/TDSR-for-NVDA/TDSR-for-NVDA/SPEAKUP_FEATURE_ANALYSIS.md` - Original feature analysis
-- `/home/runner/work/TDSR-for-NVDA/TDSR-for-NVDA/API_RESEARCH_COORDINATE_TRACKING.md` - Detailed API research
-- `/home/runner/work/TDSR-for-NVDA/TDSR-for-NVDA/CURSOR_TRACKING_IMPLEMENTATION.md` - Cursor tracking implementation
-- `/home/runner/work/TDSR-for-NVDA/TDSR-for-NVDA/PHASE1_SPECS.md` - Phase 1 quick wins specifications
-- `/home/runner/work/TDSR-for-NVDA/TDSR-for-NVDA/PHASE2_SPECS.md` - Phase 2 core enhancements
+- `docs/archive/research/SPEAKUP_FEATURE_ANALYSIS.md` - Original feature analysis
+- `docs/archive/research/API_RESEARCH_COORDINATE_TRACKING.md` - Detailed API research
+- `docs/archive/implementation/CURSOR_TRACKING_IMPLEMENTATION.md` - Cursor tracking implementation
+- `docs/archive/development/PHASE1_SPECS.md` - Phase 1 quick wins specifications
+- `docs/archive/development/PHASE2_SPECS.md` - Phase 2 core enhancements
 
 ---
 
@@ -899,11 +899,11 @@ def _getPositionCached(self, textInfo):
 
 ### TDSR Documentation
 
-- `SPEAKUP_FEATURE_ANALYSIS.md` - Comprehensive Speakup feature analysis
-- `API_RESEARCH_COORDINATE_TRACKING.md` - Detailed API research and implementation strategies
-- `CURSOR_TRACKING_IMPLEMENTATION.md` - Cursor tracking implementation details
-- `PHASE1_SPECS.md` - Phase 1 quick wins specifications
-- `PHASE2_SPECS.md` - Phase 2 core enhancements specifications
+- `docs/archive/research/SPEAKUP_FEATURE_ANALYSIS.md` - Comprehensive Speakup feature analysis
+- `docs/archive/research/API_RESEARCH_COORDINATE_TRACKING.md` - Detailed API research and implementation strategies
+- `docs/archive/implementation/CURSOR_TRACKING_IMPLEMENTATION.md` - Cursor tracking implementation details
+- `docs/archive/development/PHASE1_SPECS.md` - Phase 1 quick wins specifications
+- `docs/archive/development/PHASE2_SPECS.md` - Phase 2 core enhancements specifications
 
 ---
 
