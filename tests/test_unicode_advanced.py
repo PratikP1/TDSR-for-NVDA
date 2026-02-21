@@ -19,8 +19,8 @@ class TestBidiHelper(unittest.TestCase):
 
 	def setUp(self):
 		"""Set up test fixtures."""
-		# Import after mocking
-		from addon.globalPlugins.terminalAccess import BidiHelper
+		# Import after mocking via conftest
+		from globalPlugins.terminalAccess import BidiHelper
 		self.BidiHelper = BidiHelper
 
 	def test_bidi_helper_initialization(self):
@@ -323,7 +323,7 @@ class TestOptionalDependencyHandling(unittest.TestCase):
 
 	def test_bidi_without_library(self):
 		"""Test BidiHelper works without bidi library."""
-		from addon.globalPlugins.terminalAccess import BidiHelper
+		from globalPlugins.terminalAccess import BidiHelper
 		helper = BidiHelper()
 
 		# Should initialize even if library unavailable
@@ -336,7 +336,7 @@ class TestOptionalDependencyHandling(unittest.TestCase):
 
 	def test_emoji_without_library(self):
 		"""Test EmojiHelper works without emoji library."""
-		from addon.globalPlugins.terminalAccess import EmojiHelper
+		from globalPlugins.terminalAccess import EmojiHelper
 		helper = EmojiHelper()
 
 		# Should initialize even if library unavailable
