@@ -28,6 +28,7 @@ from scriptHandler import script
 import scriptHandler
 import globalCommands
 import speech
+from typing import Optional, Tuple, Dict, List, Union, Any, Set
 
 try:
 	addonHandler.initTranslation()
@@ -94,12 +95,12 @@ class PositionCache:
 	CACHE_TIMEOUT_MS = 1000  # 1 second timeout
 	MAX_CACHE_SIZE = 100  # Maximum number of cached positions
 
-	def __init__(self):
+	def __init__(self) -> None:
 		"""Initialize an empty position cache."""
-		self._cache = {}
-		self._lock = threading.Lock()
+		self._cache: Dict[str, Tuple[int, int, float]] = {}
+		self._lock: threading.Lock = threading.Lock()
 
-	def get(self, bookmark):
+	def get(self, bookmark: Any) -> Optional[Tuple[int, int]]:
 		"""
 		Retrieve cached position for a bookmark if valid.
 
@@ -121,7 +122,7 @@ class PositionCache:
 					del self._cache[key]
 		return None
 
-	def set(self, bookmark, row, col):
+	def set(self, bookmark: Any, row: int, col: int) -> None:
 		"""
 		Store position in cache with current timestamp.
 
@@ -141,12 +142,12 @@ class PositionCache:
 			timestamp = time.time() * 1000  # Current time in milliseconds
 			self._cache[key] = (row, col, timestamp)
 
-	def clear(self):
+	def clear(self) -> None:
 		"""Clear all cached positions."""
 		with self._lock:
 			self._cache.clear()
 
-	def invalidate(self, bookmark):
+	def invalidate(self, bookmark: Any) -> None:
 		"""
 		Invalidate a specific cached position.
 
@@ -199,11 +200,21 @@ class ANSIParser:
 		9: 'strikethrough',
 	}
 
-	def __init__(self):
+	def __init__(self) -> None:
 		"""Initialize the ANSI parser."""
+		self.foreground: Optional[Union[str, Tuple[int, int, int]]] = None
+		self.background: Optional[Union[str, Tuple[int, int, int]]] = None
+		self.bold: bool = False
+		self.dim: bool = False
+		self.italic: bool = False
+		self.underline: bool = False
+		self.blink: bool = False
+		self.inverse: bool = False
+		self.hidden: bool = False
+		self.strikethrough: bool = False
 		self.reset()
 
-	def reset(self):
+	def reset(self) -> None:
 		"""Reset parser state to defaults."""
 		self.foreground = None
 		self.background = None
@@ -216,7 +227,7 @@ class ANSIParser:
 		self.hidden = False
 		self.strikethrough = False
 
-	def parse(self, text):
+	def parse(self, text: str) -> Dict[str, Any]:
 		"""
 		Parse ANSI escape sequences from text and return attributes.
 
@@ -241,7 +252,7 @@ class ANSIParser:
 
 		return self._getCurrentAttributes()
 
-	def _processCodes(self, codes):
+	def _processCodes(self, codes: List[int]) -> None:
 		"""Process a list of ANSI codes."""
 		i = 0
 		while i < len(codes):
@@ -320,7 +331,7 @@ class ANSIParser:
 
 			i += 1
 
-	def _getCurrentAttributes(self):
+	def _getCurrentAttributes(self) -> Dict[str, Any]:
 		"""Get current attribute state as a dictionary."""
 		return {
 			'foreground': self.foreground,
@@ -335,7 +346,7 @@ class ANSIParser:
 			'strikethrough': self.strikethrough,
 		}
 
-	def formatAttributes(self, mode='detailed'):
+	def formatAttributes(self, mode: str = 'detailed') -> str:
 		"""
 		Format current attributes as human-readable text.
 
@@ -401,7 +412,7 @@ class ANSIParser:
 		return ', '.join(parts) if parts else 'default attributes'
 
 	@staticmethod
-	def stripANSI(text):
+	def stripANSI(text: str) -> str:
 		"""
 		Remove all ANSI escape sequences from text.
 
@@ -428,7 +439,7 @@ class UnicodeWidthHelper:
 	"""
 
 	@staticmethod
-	def getCharWidth(char):
+	def getCharWidth(char: str) -> int:
 		"""
 		Get display width of a single character.
 
@@ -451,7 +462,7 @@ class UnicodeWidthHelper:
 			return 1
 
 	@staticmethod
-	def getTextWidth(text):
+	def getTextWidth(text: str) -> int:
 		"""
 		Calculate total display width of a text string.
 
@@ -482,7 +493,7 @@ class UnicodeWidthHelper:
 			return len(text)
 
 	@staticmethod
-	def extractColumnRange(text, startCol, endCol):
+	def extractColumnRange(text: str, startCol: int, endCol: int) -> str:
 		"""
 		Extract text from specific column range, accounting for Unicode width.
 
@@ -524,7 +535,7 @@ class UnicodeWidthHelper:
 		return ''.join(result)
 
 	@staticmethod
-	def findColumnPosition(text, targetCol):
+	def findColumnPosition(text: str, targetCol: int) -> int:
 		"""
 		Find the string index that corresponds to a target column position.
 
@@ -556,7 +567,8 @@ class WindowDefinition:
 	vim status line, htop process list).
 	"""
 
-	def __init__(self, name, top, bottom, left, right, mode='announce', enabled=True):
+	def __init__(self, name: str, top: int, bottom: int, left: int, right: int,
+				 mode: str = 'announce', enabled: bool = True) -> None:
 		"""
 		Initialize a window definition.
 
@@ -569,15 +581,15 @@ class WindowDefinition:
 			mode: Window mode ('announce', 'silent', 'monitor')
 			enabled: Whether window is currently active
 		"""
-		self.name = name
-		self.top = top
-		self.bottom = bottom
-		self.left = left
-		self.right = right
-		self.mode = mode  # 'announce' = read content, 'silent' = suppress, 'monitor' = track changes
-		self.enabled = enabled
+		self.name: str = name
+		self.top: int = top
+		self.bottom: int = bottom
+		self.left: int = left
+		self.right: int = right
+		self.mode: str = mode  # 'announce' = read content, 'silent' = suppress, 'monitor' = track changes
+		self.enabled: bool = enabled
 
-	def contains(self, row, col):
+	def contains(self, row: int, col: int) -> bool:
 		"""
 		Check if a position is within this window.
 
@@ -592,7 +604,7 @@ class WindowDefinition:
 				self.top <= row <= self.bottom and
 				self.left <= col <= self.right)
 
-	def toDict(self):
+	def toDict(self) -> Dict[str, Any]:
 		"""Convert window definition to dictionary for serialization."""
 		return {
 			'name': self.name,
@@ -605,7 +617,7 @@ class WindowDefinition:
 		}
 
 	@classmethod
-	def fromDict(cls, data):
+	def fromDict(cls, data: Dict[str, Any]) -> 'WindowDefinition':
 		"""Create window definition from dictionary."""
 		return cls(
 			name=data.get('name', ''),
@@ -625,7 +637,7 @@ class ApplicationProfile:
 	Allows customizing TDSR behavior for different applications (vim, tmux, htop, etc.).
 	"""
 
-	def __init__(self, appName, displayName=None):
+	def __init__(self, appName: str, displayName: Optional[str] = None) -> None:
 		"""
 		Initialize an application profile.
 
@@ -633,40 +645,41 @@ class ApplicationProfile:
 			appName: Application identifier (e.g., "vim", "tmux", "htop")
 			displayName: Human-readable name (e.g., "Vim/Neovim")
 		"""
-		self.appName = appName
-		self.displayName = displayName or appName
+		self.appName: str = appName
+		self.displayName: str = displayName or appName
 
 		# Settings overrides (None = use global setting)
-		self.punctuationLevel = None
-		self.cursorTrackingMode = None
-		self.keyEcho = None
-		self.linePause = None
-		self.processSymbols = None
-		self.repeatedSymbols = None
-		self.repeatedSymbolsValues = None
-		self.cursorDelay = None
-		self.quietMode = None
+		self.punctuationLevel: Optional[int] = None
+		self.cursorTrackingMode: Optional[int] = None
+		self.keyEcho: Optional[bool] = None
+		self.linePause: Optional[bool] = None
+		self.processSymbols: Optional[bool] = None
+		self.repeatedSymbols: Optional[bool] = None
+		self.repeatedSymbolsValues: Optional[str] = None
+		self.cursorDelay: Optional[int] = None
+		self.quietMode: Optional[bool] = None
 
 		# Window definitions (list of WindowDefinition objects)
-		self.windows = []
+		self.windows: List[WindowDefinition] = []
 
 		# Custom gestures (dict of gesture -> function name)
-		self.customGestures = {}
+		self.customGestures: Dict[str, str] = {}
 
-	def addWindow(self, name, top, bottom, left, right, mode='announce'):
+	def addWindow(self, name: str, top: int, bottom: int, left: int, right: int,
+				  mode: str = 'announce') -> WindowDefinition:
 		"""Add a window definition to this profile."""
 		window = WindowDefinition(name, top, bottom, left, right, mode)
 		self.windows.append(window)
 		return window
 
-	def getWindowAtPosition(self, row, col):
+	def getWindowAtPosition(self, row: int, col: int) -> Optional[WindowDefinition]:
 		"""Get the window containing the specified position."""
 		for window in self.windows:
 			if window.contains(row, col):
 				return window
 		return None
 
-	def toDict(self):
+	def toDict(self) -> Dict[str, Any]:
 		"""Convert profile to dictionary for serialization."""
 		return {
 			'appName': self.appName,
@@ -685,7 +698,7 @@ class ApplicationProfile:
 		}
 
 	@classmethod
-	def fromDict(cls, data):
+	def fromDict(cls, data: Dict[str, Any]) -> 'ApplicationProfile':
 		"""Create profile from dictionary."""
 		profile = cls(data.get('appName', ''), data.get('displayName'))
 		profile.punctuationLevel = data.get('punctuationLevel')
@@ -713,13 +726,13 @@ class ProfileManager:
 	Handles profile creation, detection, loading, and application.
 	"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		"""Initialize the profile manager with default profiles."""
-		self.profiles = {}
-		self.activeProfile = None
+		self.profiles: Dict[str, ApplicationProfile] = {}
+		self.activeProfile: Optional[ApplicationProfile] = None
 		self._initializeDefaultProfiles()
 
-	def _initializeDefaultProfiles(self):
+	def _initializeDefaultProfiles(self) -> None:
 		"""Create default profiles for popular terminal applications."""
 
 		# Vim/Neovim profile
@@ -777,7 +790,7 @@ class ProfileManager:
 		irssi.addWindow('status', 9999, 9999, 1, 9999, mode='silent')
 		self.profiles['irssi'] = irssi
 
-	def detectApplication(self, focusObject):
+	def detectApplication(self, focusObject: Any) -> str:
 		"""
 		Detect the current terminal application.
 
@@ -821,31 +834,31 @@ class ProfileManager:
 
 		return 'default'
 
-	def getProfile(self, appName):
+	def getProfile(self, appName: str) -> Optional[ApplicationProfile]:
 		"""Get profile for specified application."""
 		return self.profiles.get(appName)
 
-	def setActiveProfile(self, appName):
+	def setActiveProfile(self, appName: str) -> None:
 		"""Set the currently active profile."""
 		self.activeProfile = self.profiles.get(appName)
 
-	def addProfile(self, profile):
+	def addProfile(self, profile: ApplicationProfile) -> None:
 		"""Add or update a profile."""
 		self.profiles[profile.appName] = profile
 
-	def removeProfile(self, appName):
+	def removeProfile(self, appName: str) -> None:
 		"""Remove a profile."""
 		if appName in self.profiles and appName not in ['vim', 'tmux', 'htop', 'less', 'git', 'nano', 'irssi']:
 			del self.profiles[appName]
 
-	def exportProfile(self, appName):
+	def exportProfile(self, appName: str) -> Optional[Dict[str, Any]]:
 		"""Export profile to dictionary."""
 		profile = self.profiles.get(appName)
 		if profile:
 			return profile.toDict()
 		return None
 
-	def importProfile(self, data):
+	def importProfile(self, data: Dict[str, Any]) -> ApplicationProfile:
 		"""Import profile from dictionary."""
 		profile = ApplicationProfile.fromDict(data)
 		self.addProfile(profile)
@@ -853,7 +866,7 @@ class ProfileManager:
 
 
 # Input validation helper functions for security hardening
-def _validateInteger(value, minValue, maxValue, default, fieldName):
+def _validateInteger(value: Any, minValue: int, maxValue: int, default: int, fieldName: str) -> int:
 	"""
 	Validate and sanitize an integer configuration value.
 
@@ -885,7 +898,7 @@ def _validateInteger(value, minValue, maxValue, default, fieldName):
 		return default
 
 
-def _validateString(value, maxLength, default, fieldName):
+def _validateString(value: Any, maxLength: int, default: str, fieldName: str) -> str:
 	"""
 	Validate and sanitize a string configuration value.
 
@@ -916,7 +929,7 @@ def _validateString(value, maxLength, default, fieldName):
 		return default
 
 
-def _validateSelectionSize(startRow, endRow, startCol, endCol):
+def _validateSelectionSize(startRow: int, endRow: int, startCol: int, endCol: int) -> Tuple[bool, Optional[str]]:
 	"""
 	Validate selection size against resource limits.
 
