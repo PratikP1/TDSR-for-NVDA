@@ -12,17 +12,19 @@ TDSR for NVDA enables screen reader users to efficiently navigate and interact w
 - **Word and character navigation** with phonetic spelling support
 - **Continuous reading (Say All)** - Read from cursor to end of buffer
 - **Screen edge navigation** - Jump to line/buffer boundaries quickly
+- **Directional reading** - Read from cursor to any edge (left/right/top/bottom)
+- **Punctuation level system** - 4 levels of punctuation verbosity (None/Some/Most/All)
 - **Line indentation detection** - Essential for Python and YAML code
 - **Position announcement** - Report row and column coordinates
 - **Character code announcement** - Display ASCII/Unicode values
+- **Enhanced selection system** - Linear and rectangular (column-based) selections
 - **Multiple cursor tracking modes** - Standard, Highlight, Window, or Off
 - **Highlight tracking** - Detect and announce highlighted/inverse text
 - **Screen windowing** - Define and monitor specific screen regions
 - **Attribute/color reading** - Announce ANSI colors and text formatting
 - **Key echo** to hear characters as you type
-- **Symbol processing** to speak symbol names
 - **Quiet mode** to temporarily disable automatic announcements
-- **Selection and copy functionality** for terminal content
+- **Copy functionality** for terminal content with flexible selection
 - **Configurable settings** through NVDA's settings dialog
 
 ## Supported Terminals
@@ -69,9 +71,20 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 - **NVDA+Alt+PageUp** - Jump to top of terminal buffer
 - **NVDA+Alt+PageDown** - Jump to bottom of terminal buffer
 
+### Directional Reading
+- **NVDA+Alt+Shift+Left** - Read from cursor to beginning of line
+- **NVDA+Alt+Shift+Right** - Read from cursor to end of line
+- **NVDA+Alt+Shift+Up** - Read from cursor to top of buffer
+- **NVDA+Alt+Shift+Down** - Read from cursor to bottom of buffer
+
 ### Reading & Position
 - **NVDA+Alt+A** - Continuous reading (Say All) from cursor to end
 - **NVDA+Alt+P** - Announce current row and column position
+
+### Punctuation Levels
+- **NVDA+Alt+[** - Decrease punctuation level
+- **NVDA+Alt+]** - Increase punctuation level
+- Levels: None (0) → Some (1) → Most (2) → All (3)
 
 ### Cursor Tracking & Attributes
 - **NVDA+Alt+Asterisk** - Cycle cursor tracking mode (Off → Standard → Highlight → Window)
@@ -82,12 +95,16 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 - **NVDA+Alt+F3** - Clear screen window
 - **NVDA+Alt+Plus** - Read window content
 
+### Selection & Copy
+- **NVDA+Alt+R** - Toggle mark (start/end/clear for enhanced selection)
+- **NVDA+Alt+C** - Copy linear selection (if marks set) or open settings (if no marks)
+- **NVDA+Alt+Shift+C** - Copy rectangular selection
+- **NVDA+Alt+X** - Clear selection marks
+- **NVDA+Alt+V** - Enter legacy copy mode
+
 ### Special Features
 - **NVDA+Alt+K** (twice) - Spell current word
 - **NVDA+Alt+Q** - Toggle quiet mode
-- **NVDA+Alt+R** - Start/end selection (automatically copies to clipboard)
-- **NVDA+Alt+V** - Enter copy mode
-- **NVDA+Alt+C** - Open settings
 
 ### Help
 - **NVDA+Shift+F1** - Open user guide
@@ -112,7 +129,12 @@ Access TDSR settings through:
 
 **Line Pause** - Reserved for future continuous reading functionality. Currently preserved but not actively used.
 
-**Process Symbols** - Speaks symbols by name (e.g., "dollar" for $, "at" for @). Affects typing echo, cursor tracking, and manual character navigation. Essential for working with scripts and complex command syntax.
+**Punctuation Level** - Controls how many symbols are announced (0-3):
+- **Level 0 (None)**: No punctuation announced
+- **Level 1 (Some)**: Basic punctuation (.,?!;:)
+- **Level 2 (Most)**: Most punctuation (adds @#$%^&*()_+=[]{}\\|<>/)
+- **Level 3 (All)**: All punctuation and symbols
+- Applies to typing echo, cursor tracking, and character navigation. Essential for developers who need to hear punctuation in code and commands without overwhelming verbosity in prose.
 
 **Condense Repeated Symbols** - Counts repeated symbols and announces them as a group (e.g., "3 equals" instead of "equals equals equals"). Only works with symbols specified in "Repeated Symbols to Condense".
 

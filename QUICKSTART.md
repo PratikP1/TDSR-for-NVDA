@@ -48,20 +48,27 @@ Position on any text and try:
 - **NVDA+Alt+I** (twice) - Announce line indentation
 - **NVDA+Alt+P** - Announce current position (row and column)
 
+### Step 6: Control Punctuation Levels
+- **NVDA+Alt+]** - Increase punctuation level (None → Some → Most → All)
+- **NVDA+Alt+[** - Decrease punctuation level
+- Try typing symbols with different levels to hear the difference
+
 ## Essential Commands
 
 | Command | Action |
 |---------|--------|
 | **NVDA+Shift+F1** | Open full user guide |
 | **NVDA+Alt+Q** | Toggle quiet mode |
-| **NVDA+Alt+C** | Open settings |
+| **NVDA+Alt+C** | Open settings (or copy selection if marks set) |
 | **NVDA+Alt+I** | Read current line |
 | **NVDA+Alt+I** (twice) | Announce line indentation |
 | **NVDA+Alt+K** | Read current word |
 | **NVDA+Alt+A** | Continuous reading (say all) |
 | **NVDA+Alt+P** | Announce position (row, column) |
+| **NVDA+Alt+[/]** | Decrease/increase punctuation level |
 | **NVDA+Alt+Home/End** | Jump to start/end of line |
 | **NVDA+Alt+PageUp/Down** | Jump to top/bottom of buffer |
+| **NVDA+Alt+Shift+Arrows** | Read to edge (left/right/up/down) |
 
 ## Settings (2 minutes)
 
@@ -73,7 +80,7 @@ Open settings with **NVDA+Alt+C** or:
 Try these settings:
 - **Key Echo**: Hear characters as you type
 - **Cursor Tracking**: Announce cursor movements
-- **Symbol Processing**: Hear symbol names (e.g., "dollar" for $)
+- **Punctuation Level**: Control symbol verbosity (None/Some/Most/All)
 
 ## Common Tasks
 
@@ -82,6 +89,27 @@ Try these settings:
 2. Use **NVDA+Alt+A** for continuous reading (say all)
 3. Or use **NVDA+Alt+U/I/O** to read line by line
 4. Use **NVDA+Alt+Q** to enable quiet mode if output is verbose
+
+### Using Punctuation Levels
+1. Press **NVDA+Alt+]** to increase level
+2. Type commands with symbols (@, #, $, etc.)
+3. Hear more or fewer symbols based on level
+4. Level 2 (Most) is ideal for code and scripts
+5. Level 0 (None) is good for prose
+
+### Selecting and Copying Text
+1. Navigate to selection start
+2. Press **NVDA+Alt+R** to mark start
+3. Navigate to selection end
+4. Press **NVDA+Alt+R** to mark end
+5. Press **NVDA+Alt+C** to copy (linear) or **NVDA+Alt+Shift+C** (rectangular)
+6. Press **NVDA+Alt+X** to clear marks
+
+### Reading Portions of Screen
+1. Position cursor where you want to start
+2. Press **NVDA+Alt+Shift+Right** to read to end of line
+3. Or **NVDA+Alt+Shift+Down** to read to bottom of buffer
+4. Use other directions (Left/Up) as needed
 
 ### Reading Long Files or Logs
 1. Navigate to start position
@@ -122,13 +150,15 @@ Try these settings:
 ## Tips for Efficiency
 
 1. **Use Continuous Reading**: Press NVDA+Alt+A to read long output instead of navigating line by line
-2. **Use Quiet Mode**: Enable with NVDA+Alt+Q when commands produce lots of output
-3. **Learn Screen Edge Navigation**: Jump to line/buffer boundaries with Home/End/PageUp/PageDown
-4. **Check Indentation**: Press NVDA+Alt+I twice when reviewing Python or YAML code
-5. **Learn Word Navigation**: Faster than character-by-character
-6. **Enable Symbol Processing**: Helpful when working with scripts or configs
-7. **Adjust Cursor Delay**: Fine-tune in settings for your preference
-8. **Practice Commands**: Muscle memory makes navigation much faster
+2. **Master Punctuation Levels**: Cycle with [/] to match your current task (code vs. prose)
+3. **Use Directional Reading**: Shift+Arrow combos quickly scan portions without moving cursor
+4. **Learn Screen Edge Navigation**: Jump to line/buffer boundaries with Home/End/PageUp/PageDown
+5. **Use Mark-Based Selection**: For precise text extraction from tables or structured output
+6. **Check Indentation**: Press NVDA+Alt+I twice when reviewing Python or YAML code
+7. **Use Quiet Mode**: Enable with NVDA+Alt+Q when commands produce lots of output
+8. **Learn Word Navigation**: Faster than character-by-character
+9. **Adjust Cursor Delay**: Fine-tune in settings for your preference
+10. **Practice Commands**: Muscle memory makes navigation much faster
 
 ## Troubleshooting
 
