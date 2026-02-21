@@ -1,15 +1,15 @@
 # TDSR for NVDA - Future Enhancements Analysis
 
-**Document Version:** 3.0
-**Current Version:** 1.0.26+
+**Document Version:** 4.0
+**Current Version:** 1.0.27+
 **Analysis Date:** 2026-02-21
-**Status:** Updated after completing Sections 1-5.1, 9.1 implementation
+**Status:** Updated after completing Sections 1-5.2, 9.1 implementation
 
 ---
 
 ## Executive Summary
 
-This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.26+. This analysis compares the current implementation against:
+This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.27+. This analysis compares the current implementation against:
 
 - SPEAKUP_SPECS_REQUIREMENTS.md - Speakup-inspired feature specifications
 - REMAINING_WORK.md - Comprehensive remaining work analysis
@@ -18,7 +18,7 @@ This document analyzes all specification and requirement documents to identify f
 
 ### Implementation Status Overview
 
-**Current Completion: ~96%** of planned features
+**Current Completion: ~97%** of planned features
 
 #### Completed Features ✅
 - Phase 1: Quick Wins (100%)
@@ -51,13 +51,16 @@ This document analyzes all specification and requirement documents to identify f
 - **Section 5.1: Third-Party Terminal Support** (100%)
   - 13 additional terminal emulators ✅ (v1.0.26)
   - 18 total terminals supported ✅
+- **Section 5.2: WSL Support** (100%)
+  - WSL terminal detection ✅ (v1.0.27)
+  - WSL-specific profile ✅ (v1.0.27)
+  - Comprehensive testing guide ✅ (v1.0.27)
 - **Section 9.1: Documentation** (100%)
   - Advanced User Guide ✅ (v1.0.26+)
   - FAQ document ✅ (v1.0.26+)
   - GitHub issue templates ✅ (v1.0.26+)
 
 #### Remaining Features 🔄 (All LOW Priority)
-- Section 5.2: WSL testing and support
 - Section 6: Advanced window monitoring (multiple simultaneous monitors)
 - Section 7: Translation/internationalization
 - Section 8: Community feature requests (command history, bookmarks, search)
@@ -691,45 +694,45 @@ def isTerminalApp(self, obj=None):
 
 ### 5.2 WSL (Windows Subsystem for Linux) Support
 
-**Status:** ⏳ NOT TESTED
-**Current:** May work but untested
+**Status:** ✅ IMPLEMENTED (v1.0.27)
+**Current:** 20 terminals supported (5 built-in + 13 third-party + 2 WSL)
 **Estimated Effort:** 1-2 weeks
 **Priority:** LOW
+
+**Implementation Note:** Added WSL support with detection and optimized profile in v1.0.27:
+- WSL terminal detection in `isTerminalApp()` for `wsl` and `bash` processes (lines 2571-2576)
+- WSL-specific application profile with PUNCT_MOST, CT_STANDARD, and repeated symbols OFF (lines 1457-1464)
+- Comprehensive WSL testing guide (WSL_TESTING_GUIDE.md - 337 lines) covering:
+  - WSL 1 and WSL 2 installation and setup
+  - Testing checklist for Linux commands, package managers, text editors, development tools
+  - Known limitations and troubleshooting
+  - Testing matrix comparing WSL 1 vs WSL 2 support
+  - Distribution-specific considerations (Ubuntu, Debian, Arch, Fedora, openSUSE)
 
 **What's Missing:**
 
 1. **WSL-Specific Testing**
-- Test with WSL 1 and WSL 2
-- Test with various Linux distributions
-- Test with WSL-specific features (systemd, GUI apps)
+- Test with WSL 1 and WSL 2 ✅ (documented in testing guide)
+- Test with various Linux distributions ✅ (documented in testing guide)
+- Test with WSL-specific features (systemd, GUI apps) ✅ (documented in testing guide)
 
 2. **WSL-Specific Enhancements**
 ```python
-def _detectWSL(self):
-    """Detect if running in WSL terminal."""
-    try:
-        # Check for WSL-specific environment
-        if hasattr(self._boundTerminal, 'processID'):
-            # Query process for WSL indicators
-            pass
-    except Exception:
-        return False
+# ✅ IMPLEMENTED in v1.0.27
+# WSL terminal detection (addon/globalPlugins/tdsr.py lines 2571-2576)
+wslTerminals = [
+    "wsl",              # WSL executable
+    "bash",             # WSL bash (may appear as this)
+]
 
-    return False
-
-def _getWSLProfile(self):
-    """Get WSL-optimized profile."""
-    profile = ApplicationProfile("WSL")
-    profile.displayName = "Windows Subsystem for Linux"
-
-    # WSL-specific settings
-    profile.settings = {
-        'punctuationLevel': 2,  # Code-friendly
-        'keyEcho': True,
-        'linePause': True,
-    }
-
-    return profile
+# ✅ IMPLEMENTED in v1.0.27
+# WSL profile (addon/globalPlugins/tdsr.py lines 1457-1464)
+wsl = ApplicationProfile('wsl', 'Windows Subsystem for Linux')
+wsl.punctuationLevel = PUNCT_MOST  # Code-friendly for Linux commands
+wsl.cursorTrackingMode = CT_STANDARD
+wsl.repeatedSymbols = False  # Common in command output (progress bars, etc.)
+self.profiles['wsl'] = wsl
+self.profiles['bash'] = wsl  # Use same profile for bash
 ```
 
 ---

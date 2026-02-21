@@ -2,6 +2,112 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.27] - 2026-02-21
+
+### Feature - WSL (Windows Subsystem for Linux) Support (Section 5.2)
+
+**Feature Release**: Adds initial support for Windows Subsystem for Linux (WSL), enabling TDSR functionality in Linux terminal environments running on Windows.
+
+#### Added
+
+- **WSL Terminal Detection**: Enhanced terminal detection to recognize WSL environments
+  - Detects `wsl` and `wsl.exe` processes
+  - Detects `bash` when running as WSL bash
+  - Automatic WSL environment recognition
+  - Location: `addon/globalPlugins/tdsr.py` lines 2571-2576
+
+- **WSL-Specific Application Profile**: Optimized profile for Linux command-line usage
+  - Punctuation level: PUNCT_MOST (code-friendly for Linux commands and paths)
+  - Cursor tracking: CT_STANDARD (follows system caret)
+  - Repeated symbols: OFF (reduces verbosity with progress bars and separators)
+  - Profile applies to both `wsl` and `bash` process names
+  - Location: `addon/globalPlugins/tdsr.py` lines 1457-1464
+
+- **Comprehensive WSL Testing Guide**: New documentation for testing WSL support
+  - Installation and setup instructions
+  - WSL 1 and WSL 2 compatibility notes
+  - Testing checklist for common Linux commands
+  - Package manager testing (apt, dnf, yum, zypper, pacman)
+  - Text editor integration (nano, vim, emacs)
+  - Development tools (git, python, node, make)
+  - System administration commands
+  - Terminal multiplexers (tmux, screen)
+  - Known limitations and troubleshooting
+  - Testing matrix comparing WSL 1 vs WSL 2 support
+  - Location: `WSL_TESTING_GUIDE.md` (337 lines)
+
+#### Enhanced
+
+- **Terminal Application Support**: Now supports 20 terminal types
+  - 5 built-in Windows terminals (cmd, PowerShell, Windows Terminal, etc.)
+  - 13 third-party terminal emulators (Cmder, ConEmu, PuTTY, Alacritty, etc.)
+  - 2 WSL environments (wsl, bash)
+  - Total: 20 supported terminal types across all categories
+
+- **Profile Detection**: WSL profile automatically activates in Linux environments
+  - Seamless detection and profile switching
+  - No manual configuration required for basic usage
+  - Custom profiles supported for specific distributions
+
+#### Technical Details
+
+**Implementation Impact**:
+- Code changes: 15 lines added/modified in `tdsr.py`
+- New documentation: 337 lines in `WSL_TESTING_GUIDE.md`
+- Profile count: 23 total profiles (7 built-in apps + 13 third-party + 2 WSL + 1 default)
+- Backward compatibility: Fully maintained
+- Performance: No impact (detection is simple string matching)
+
+**Use Cases**:
+- Linux command-line development on Windows
+- Remote server administration via SSH from WSL
+- Cross-platform development and testing
+- Linux package management and system administration
+- Using Linux text editors and development tools
+- Running terminal-based Linux applications on Windows
+
+**Testing Requirements**:
+- Test with WSL 1 and WSL 2
+- Test with various distributions (Ubuntu, Debian, Arch, Fedora, openSUSE)
+- Test common command-line operations
+- Test package managers and development tools
+- Test text editors with existing profiles
+- Test terminal multiplexers
+- Document any distribution-specific considerations
+
+**Notes**:
+- WSL detection is based on process name (`wsl` or `bash`)
+- Profile optimized for Linux command-line conventions (forward slashes, dashes)
+- Repeated symbols disabled for progress bars and visual separators common in Linux tools
+- Same profile applies to both `wsl` and `bash` process names
+- Custom profiles can be created for specific Linux distributions
+- WSL 2 generally provides better performance than WSL 1
+- systemd support requires WSL 2 with Ubuntu 22.04+ or similar
+
+#### Breaking Changes
+
+None. This is a new feature that doesn't affect existing functionality.
+
+#### Migration Guide
+
+No migration required. WSL support is automatically enabled in v1.0.27+.
+
+**To use WSL with TDSR**:
+1. Ensure TDSR v1.0.27+ is installed
+2. Launch WSL from Windows Terminal or directly via `wsl` command
+3. TDSR will automatically detect WSL and activate the WSL profile
+4. Use standard TDSR gestures (NVDA+Alt+...) in WSL terminal
+
+**To customize WSL profile**:
+1. Open TDSR Settings (NVDA → Preferences → TDSR Settings)
+2. Select "Windows Subsystem for Linux" profile
+3. Adjust settings as needed
+4. Save changes
+
+See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting.
+
+---
+
 ## [1.0.26] - 2026-02-21
 
 ### Feature - Third-Party Terminal Support (Section 5.1)

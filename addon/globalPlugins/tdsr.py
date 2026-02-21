@@ -1454,6 +1454,15 @@ class ProfileManager:
 		fluent.cursorTrackingMode = CT_STANDARD
 		self.profiles['fluent'] = fluent
 
+		# Section 5.2: WSL (Windows Subsystem for Linux) profile (v1.0.27+)
+		# Optimized for Linux command-line environment
+		wsl = ApplicationProfile('wsl', 'Windows Subsystem for Linux')
+		wsl.punctuationLevel = PUNCT_MOST  # Code-friendly for Linux commands
+		wsl.cursorTrackingMode = CT_STANDARD
+		wsl.repeatedSymbols = False  # Common in command output (progress bars, etc.)
+		self.profiles['wsl'] = wsl
+		self.profiles['bash'] = wsl  # Use same profile for bash
+
 	def detectApplication(self, focusObject: Any) -> str:
 		"""
 		Detect the current terminal application.
@@ -2523,9 +2532,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		Check if the current application is a supported terminal.
 
-		Supports both built-in Windows terminals and popular third-party
-		terminal emulators. Enhanced in v1.0.26 to support additional
-		third-party terminals.
+		Supports built-in Windows terminals, popular third-party terminal
+		emulators, and WSL (Windows Subsystem for Linux). Enhanced in v1.0.26
+		to support additional third-party terminals and v1.0.27 for WSL.
 
 		Args:
 			obj: The object to check. If None, uses the foreground object.
@@ -2568,7 +2577,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"fluent",           # FluentTerminal
 		]
 
-		allSupported = builtinTerminals + thirdPartyTerminals
+		# WSL (Windows Subsystem for Linux) (v1.0.27+)
+		# Section 5.2: WSL Support
+		wslTerminals = [
+			"wsl",              # WSL executable
+			"bash",             # WSL bash (may appear as this)
+		]
+
+		allSupported = builtinTerminals + thirdPartyTerminals + wslTerminals
 		return any(term in appName for term in allSupported)
 
 	def _getPositionContext(self, textInfo=None) -> str:
