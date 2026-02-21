@@ -12,14 +12,50 @@ addon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'addon')
 sys.path.insert(0, addon_path)
 
 # Mock NVDA modules that aren't available during testing
-sys.modules['globalPluginHandler'] = MagicMock()
+# Create a proper GlobalPlugin base class for globalPluginHandler
+class MockGlobalPlugin:
+    """Mock base class for GlobalPlugin."""
+    def __init__(self):
+        pass
+
+    def terminate(self):
+        pass
+
+globalPluginHandler_mock = MagicMock()
+globalPluginHandler_mock.GlobalPlugin = MockGlobalPlugin
+
+sys.modules['globalPluginHandler'] = globalPluginHandler_mock
 sys.modules['api'] = MagicMock()
 sys.modules['ui'] = MagicMock()
 sys.modules['config'] = MagicMock()
-sys.modules['gui'] = MagicMock()
-sys.modules['gui.guiHelper'] = MagicMock()
-sys.modules['gui.nvdaControls'] = MagicMock()
-sys.modules['gui.settingsDialogs'] = MagicMock()
+
+# Mock gui module and its submodules properly
+gui_mock = MagicMock()
+gui_helper_mock = MagicMock()
+nvda_controls_mock = MagicMock()
+settings_dialogs_mock = MagicMock()
+
+# Create a mock SettingsPanel class
+class MockSettingsPanel:
+    def __init__(self, parent=None):
+        self.parent = parent
+
+settings_dialogs_mock.SettingsPanel = MockSettingsPanel
+
+# Create mock NVDASettingsDialog with categoryClasses
+nvda_settings_dialog_mock = MagicMock()
+nvda_settings_dialog_mock.categoryClasses = []
+settings_dialogs_mock.NVDASettingsDialog = nvda_settings_dialog_mock
+
+sys.modules['gui'] = gui_mock
+sys.modules['gui.guiHelper'] = gui_helper_mock
+sys.modules['gui.nvdaControls'] = nvda_controls_mock
+sys.modules['gui.settingsDialogs'] = settings_dialogs_mock
+
+gui_mock.guiHelper = gui_helper_mock
+gui_mock.nvdaControls = nvda_controls_mock
+gui_mock.settingsDialogs = settings_dialogs_mock
+
 sys.modules['textInfos'] = MagicMock()
 sys.modules['addonHandler'] = MagicMock()
 sys.modules['scriptHandler'] = MagicMock()
