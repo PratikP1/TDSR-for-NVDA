@@ -2836,6 +2836,215 @@ class BookmarkManager:
 		return len(self._bookmarks)
 
 
+class OutputSearchManager:
+	"""
+	Search and filter terminal output with pattern matching.
+
+	Section 8.2: Output Filtering and Search (v1.0.30+)
+
+	This class enables users to search through terminal output using text patterns
+	or regular expressions, navigate between matches, and filter output. Useful for:
+	- Finding error messages in logs
+	- Locating specific command output
+	- Filtering build output for warnings
+	- Searching through help text
+	- Finding specific entries in terminal history
+
+	Features:
+	- Text search with case sensitivity option
+	- Regular expression support
+	- Navigate forward/backward through matches
+	- Show match count
+	- Jump to first/last match
+	- Wrap-around search
+
+	Example usage:
+		>>> manager = OutputSearchManager(terminal_obj)
+		>>> manager.search("error", case_sensitive=False)
+		>>> manager.next_match()  # Jump to next occurrence
+		>>> manager.previous_match()  # Jump to previous occurrence
+		>>> manager.get_match_count()  # Get total matches
+	"""
+
+	def __init__(self, terminal_obj):
+		"""
+		Initialize the OutputSearchManager.
+
+		Args:
+			terminal_obj: Terminal TextInfo object for searching
+		"""
+		self._terminal = terminal_obj
+		self._pattern = None
+		self._matches = []  # List of (bookmark, line_text, line_num) tuples
+		self._current_match_index = -1
+		self._case_sensitive = False
+		self._use_regex = False
+
+	def search(self, pattern: str, case_sensitive: bool = False, use_regex: bool = False) -> int:
+		"""
+		Search for pattern in terminal output.
+
+		Args:
+			pattern: Search pattern (text or regex)
+			case_sensitive: Case sensitive search
+			use_regex: Use regular expression
+
+		Returns:
+			int: Number of matches found
+		"""
+		if not self._terminal or not pattern:
+			return 0
+
+		self._pattern = pattern
+		self._case_sensitive = case_sensitive
+		self._use_regex = use_regex
+		self._matches = []
+		self._current_match_index = -1
+
+		try:
+			# Get all terminal content
+			info = self._terminal.makeTextInfo(textInfos.POSITION_ALL)
+			all_text = info.text
+
+			if not all_text:
+				return 0
+
+			# Split into lines
+			lines = all_text.split('\n')
+
+			# Search each line
+			if use_regex:
+				import re
+				flags = 0 if case_sensitive else re.IGNORECASE
+				regex = re.compile(pattern, flags)
+
+				for line_num, line_text in enumerate(lines, 1):
+					if regex.search(line_text):
+						# Create bookmark for this line
+						line_info = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
+						line_info.move(textInfos.UNIT_LINE, line_num - 1)
+						self._matches.append((line_info.bookmark, line_text, line_num))
+			else:
+				# Simple text search
+				search_pattern = pattern if case_sensitive else pattern.lower()
+
+				for line_num, line_text in enumerate(lines, 1):
+					search_text = line_text if case_sensitive else line_text.lower()
+					if search_pattern in search_text:
+						# Create bookmark for this line
+						line_info = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
+						line_info.move(textInfos.UNIT_LINE, line_num - 1)
+						self._matches.append((line_info.bookmark, line_text, line_num))
+
+			return len(self._matches)
+
+		except Exception:
+			return 0
+
+	def next_match(self) -> bool:
+		"""
+		Jump to next match.
+
+		Returns:
+			bool: True if jumped to next match
+		"""
+		if not self._matches:
+			return False
+
+		# Move to next match (wrap around)
+		self._current_match_index = (self._current_match_index + 1) % len(self._matches)
+		return self._jump_to_current_match()
+
+	def previous_match(self) -> bool:
+		"""
+		Jump to previous match.
+
+		Returns:
+			bool: True if jumped to previous match
+		"""
+		if not self._matches:
+			return False
+
+		# Move to previous match (wrap around)
+		self._current_match_index = (self._current_match_index - 1) % len(self._matches)
+		return self._jump_to_current_match()
+
+	def first_match(self) -> bool:
+		"""
+		Jump to first match.
+
+		Returns:
+			bool: True if jumped to first match
+		"""
+		if not self._matches:
+			return False
+
+		self._current_match_index = 0
+		return self._jump_to_current_match()
+
+	def last_match(self) -> bool:
+		"""
+		Jump to last match.
+
+		Returns:
+			bool: True if jumped to last match
+		"""
+		if not self._matches:
+			return False
+
+		self._current_match_index = len(self._matches) - 1
+		return self._jump_to_current_match()
+
+	def _jump_to_current_match(self) -> bool:
+		"""
+		Jump to current match index.
+
+		Returns:
+			bool: True if jump successful
+		"""
+		if not self._matches or self._current_match_index < 0:
+			return False
+
+		try:
+			bookmark, line_text, line_num = self._matches[self._current_match_index]
+			pos = self._terminal.makeTextInfo(bookmark)
+			if pos:
+				api.setReviewPosition(pos)
+				return True
+		except Exception:
+			pass
+
+		return False
+
+	def get_match_count(self) -> int:
+		"""
+		Get total number of matches.
+
+		Returns:
+			int: Number of matches
+		"""
+		return len(self._matches)
+
+	def get_current_match_info(self) -> tuple:
+		"""
+		Get information about current match.
+
+		Returns:
+			tuple: (match_number, total_matches, line_text, line_num) or None
+		"""
+		if not self._matches or self._current_match_index < 0:
+			return None
+
+		_, line_text, line_num = self._matches[self._current_match_index]
+		return (self._current_match_index + 1, len(self._matches), line_text, line_num)
+
+	def clear_search(self) -> None:
+		"""Clear current search results."""
+		self._pattern = None
+		self._matches = []
+		self._current_match_index = -1
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
 	TDSR Global Plugin for NVDA - Terminal Data Structure Reader
@@ -2959,6 +3168,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Bookmark manager for quick navigation (Section 8.3 - v1.0.29+)
 		self._bookmarkManager = None  # Initialized when terminal is bound
+
+		# Output search manager for filtering and search (Section 8.2 - v1.0.30+)
+		self._searchManager = None  # Initialized when terminal is bound
 
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
@@ -3123,6 +3335,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Initialize BookmarkManager for this terminal (Section 8.3 - v1.0.29+)
 			if not self._bookmarkManager:
 				self._bookmarkManager = BookmarkManager(obj)
+
+			# Initialize OutputSearchManager for this terminal (Section 8.2 - v1.0.30+)
+			if not self._searchManager:
+				self._searchManager = OutputSearchManager(obj)
 
 			# Clear position cache when switching terminals
 			self._positionCalculator.clear_cache()
@@ -4869,6 +5085,131 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			# Translators: Message when no bookmarks exist
 			ui.message(_("No bookmarks set"))
+
+	# Section 8.2: Output search functionality gestures (v1.0.30+)
+
+	@scriptHandler.script(
+		# Translators: Description for searching output
+		description=_("Search terminal output for text pattern"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+control+f"
+	)
+	def script_searchOutput(self, gesture):
+		"""Search terminal output."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._searchManager:
+			# Translators: Error message when search manager not initialized
+			ui.message(_("Search not available"))
+			return
+
+		# Prompt for search text using wx dialog
+		import wx
+
+		def show_search_dialog():
+			"""Show search dialog."""
+			parent = gui.mainFrame
+			dlg = wx.TextEntryDialog(
+				parent,
+				# Translators: Search dialog prompt
+				_("Enter search text:"),
+				# Translators: Search dialog title
+				_("Search Terminal Output")
+			)
+
+			if dlg.ShowModal() == wx.ID_OK:
+				search_text = dlg.GetValue()
+				dlg.Destroy()
+
+				if search_text:
+					# Perform search (case insensitive by default)
+					match_count = self._searchManager.search(search_text, case_sensitive=False)
+
+					if match_count > 0:
+						# Jump to first match
+						self._searchManager.first_match()
+
+						# Announce result
+						info = self._searchManager.get_current_match_info()
+						if info:
+							match_num, total, line_text, line_num = info
+							# Translators: Search results message
+							message = _("Found {total} matches. Match {num} of {total}: {text}").format(
+								num=match_num,
+								total=total,
+								text=line_text[:100]  # Truncate long lines
+							)
+							ui.message(message)
+					else:
+						# Translators: No matches found
+						ui.message(_("No matches found for '{pattern}'").format(pattern=search_text))
+			else:
+				dlg.Destroy()
+
+		# Run dialog in main thread
+		wx.CallAfter(show_search_dialog)
+
+	@scriptHandler.script(
+		# Translators: Description for next search match
+		description=_("Jump to next search match"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+f3"
+	)
+	def script_findNext(self, gesture):
+		"""Jump to next search match."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._searchManager:
+			return
+
+		if self._searchManager.get_match_count() == 0:
+			# Translators: No search results
+			ui.message(_("No search results. Use NVDA+Control+F to search."))
+			return
+
+		if self._searchManager.next_match():
+			info = self._searchManager.get_current_match_info()
+			if info:
+				match_num, total, line_text, line_num = info
+				# Announce current line
+				ui.message(line_text)
+		else:
+			# Translators: Error jumping to next match
+			ui.message(_("Cannot jump to next match"))
+
+	@scriptHandler.script(
+		# Translators: Description for previous search match
+		description=_("Jump to previous search match"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+shift+f3"
+	)
+	def script_findPrevious(self, gesture):
+		"""Jump to previous search match."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._searchManager:
+			return
+
+		if self._searchManager.get_match_count() == 0:
+			# Translators: No search results
+			ui.message(_("No search results. Use NVDA+Control+F to search."))
+			return
+
+		if self._searchManager.previous_match():
+			info = self._searchManager.get_current_match_info()
+			if info:
+				match_num, total, line_text, line_num = info
+				# Announce current line
+				ui.message(line_text)
+		else:
+			# Translators: Error jumping to previous match
+			ui.message(_("Cannot jump to previous match"))
 
 
 	def _copyToClipboard(self, text):

@@ -2,6 +2,74 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.30] - 2026-02-21
+
+### Feature - Output Filtering and Search (Section 8.2)
+
+**Feature Release**: Adds search functionality to find and navigate through terminal output.
+
+#### Added
+
+- **OutputSearchManager Class**: Search terminal output with pattern matching
+  - Text search with case sensitivity option
+  - Regular expression support (optional)
+  - Navigate forward/backward through matches with wrap-around
+  - Jump to first/last match
+  - Get match count and current match information
+  - Location: `addon/globalPlugins/tdsr.py` lines 2839-3046
+
+- **Search Gestures**:
+  - `NVDA+Control+F` - Search terminal output (shows dialog)
+  - `NVDA+F3` - Jump to next search match
+  - `NVDA+Shift+F3` - Jump to previous search match
+
+#### Technical Details
+
+**Implementation Impact**:
+- Code changes: 208 lines for OutputSearchManager class + 125 lines for search dialog and gestures
+- Interactive search dialog using wx.TextEntryDialog
+- Case-insensitive search by default
+- Regex support for advanced patterns
+- Efficient line-by-line searching with bookmarks
+
+**Use Cases**:
+- Find error messages in log output
+- Locate specific command results
+- Search through help text
+- Find warnings in build output
+- Navigate to specific lines in terminal history
+
+**API Usage Example**:
+```python
+# SearchManager is automatically initialized
+manager = self._searchManager
+
+# Simple text search (case insensitive)
+count = manager.search("error", case_sensitive=False)
+
+# Regex search
+count = manager.search(r"error:\s+\d+", use_regex=True)
+
+# Navigate matches
+manager.next_match()
+manager.previous_match()
+manager.first_match()
+manager.last_match()
+
+# Get match info
+info = manager.get_current_match_info()
+# Returns: (match_num, total_matches, line_text, line_num)
+```
+
+**Notes**:
+- Search is performed on all terminal content
+- Matches are line-based (entire lines containing pattern)
+- Wrap-around navigation (next after last goes to first)
+- Search results persist until new search or terminal switch
+- Dialog allows quick text entry for search patterns
+
+---
+
 ## [1.0.29] - 2026-02-21
 
 ### Feature - Bookmark Functionality (Section 8.3)
