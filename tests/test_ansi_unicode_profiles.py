@@ -8,10 +8,6 @@ Tests the new features added in v1.0.18:
 - WindowDefinition for multiple window regions
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import unittest
 from unittest.mock import Mock, patch
 
@@ -21,14 +17,9 @@ class TestANSIParser(unittest.TestCase):
 
 	def setUp(self):
 		"""Import ANSIParser for testing."""
-		# Import the module
-		import importlib.util
-		spec = importlib.util.spec_from_file_location(
-			"terminalAccess",
-			os.path.join(os.path.dirname(__file__), '..', 'addon', 'globalPlugins', 'terminalAccess.py')
-		)
-		terminalAccess = importlib.util.module_from_spec(spec)
-		self.ANSIParser = terminalAccess.ANSIParser
+		# Import after mocks are set up by conftest
+		from globalPlugins.terminalAccess import ANSIParser
+		self.ANSIParser = ANSIParser
 
 	def test_parser_initialization(self):
 		"""Test ANSIParser initializes correctly."""
@@ -41,37 +32,37 @@ class TestANSIParser(unittest.TestCase):
 		"""Test parsing of standard ANSI colors."""
 		parser = self.ANSIParser()
 
-		# Test red foreground
-		parser.parse('\x1b[31mRed text\x1b[0m')
+		# Test red foreground (without reset code)
+		parser.parse('\x1b[31mRed text')
 		self.assertEqual(parser.foreground, 'red')
 
 	def test_bright_colors(self):
 		"""Test parsing of bright ANSI colors."""
 		parser = self.ANSIParser()
 
-		# Test bright red
-		parser.parse('\x1b[91mBright red\x1b[0m')
+		# Test bright red (without reset code)
+		parser.parse('\x1b[91mBright red')
 		self.assertEqual(parser.foreground, 'bright red')
 
 	def test_format_attributes(self):
 		"""Test parsing of format attributes."""
 		parser = self.ANSIParser()
 
-		# Test bold
-		parser.parse('\x1b[1mBold text\x1b[0m')
+		# Test bold (without reset code)
+		parser.parse('\x1b[1mBold text')
 		self.assertTrue(parser.bold)
 
 		# Reset and test underline
 		parser.reset()
-		parser.parse('\x1b[4mUnderlined\x1b[0m')
+		parser.parse('\x1b[4mUnderlined')
 		self.assertTrue(parser.underline)
 
 	def test_reset_code(self):
 		"""Test reset code clears all attributes."""
 		parser = self.ANSIParser()
 
-		# Set some attributes
-		parser.parse('\x1b[31;1;4mRed, bold, underlined\x1b[0m')
+		# Set some attributes (without reset code in first parse)
+		parser.parse('\x1b[31;1;4mRed, bold, underlined')
 		self.assertEqual(parser.foreground, 'red')
 		self.assertTrue(parser.bold)
 		self.assertTrue(parser.underline)
@@ -91,7 +82,8 @@ class TestANSIParser(unittest.TestCase):
 	def test_format_attributes_detailed(self):
 		"""Test formatting attributes in detailed mode."""
 		parser = self.ANSIParser()
-		parser.parse('\x1b[31;1mRed and bold\x1b[0m')
+		# Parse without reset code so attributes remain set
+		parser.parse('\x1b[31;1mRed and bold')
 
 		formatted = parser.formatAttributes(mode='detailed')
 		self.assertIn('red', formatted.lower())
@@ -103,13 +95,9 @@ class TestUnicodeWidthHelper(unittest.TestCase):
 
 	def setUp(self):
 		"""Import UnicodeWidthHelper for testing."""
-		import importlib.util
-		spec = importlib.util.spec_from_file_location(
-			"terminalAccess",
-			os.path.join(os.path.dirname(__file__), '..', 'addon', 'globalPlugins', 'terminalAccess.py')
-		)
-		terminalAccess = importlib.util.module_from_spec(spec)
-		self.UnicodeWidthHelper = terminalAccess.UnicodeWidthHelper
+		# Import after mocks are set up by conftest
+		from globalPlugins.terminalAccess import UnicodeWidthHelper
+		self.UnicodeWidthHelper = UnicodeWidthHelper
 
 	def test_ascii_character_width(self):
 		"""Test width of ASCII characters."""
@@ -153,15 +141,11 @@ class TestApplicationProfile(unittest.TestCase):
 
 	def setUp(self):
 		"""Import profile classes for testing."""
-		import importlib.util
-		spec = importlib.util.spec_from_file_location(
-			"terminalAccess",
-			os.path.join(os.path.dirname(__file__), '..', 'addon', 'globalPlugins', 'terminalAccess.py')
-		)
-		terminalAccess = importlib.util.module_from_spec(spec)
-		self.ApplicationProfile = terminalAccess.ApplicationProfile
-		self.ProfileManager = terminalAccess.ProfileManager
-		self.WindowDefinition = terminalAccess.WindowDefinition
+		# Import after mocks are set up by conftest
+		from globalPlugins.terminalAccess import ApplicationProfile, ProfileManager, WindowDefinition
+		self.ApplicationProfile = ApplicationProfile
+		self.ProfileManager = ProfileManager
+		self.WindowDefinition = WindowDefinition
 
 	def test_profile_creation(self):
 		"""Test creating an application profile."""

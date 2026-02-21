@@ -1587,16 +1587,23 @@ def _validateString(value: Any, maxLength: int, default: str, fieldName: str) ->
 	Returns:
 		str: Validated value or default if invalid
 	"""
+	# Check for None or non-string types
+	if value is None or not isinstance(value, str):
+		import logHandler
+		logHandler.log.warning(
+			f"Terminal Access: Invalid {fieldName} value (got {type(value).__name__}), using default"
+		)
+		return default
+
 	try:
-		strValue = str(value)
-		if len(strValue) <= maxLength:
-			return strValue
+		if len(value) <= maxLength:
+			return value
 		else:
 			import logHandler
 			logHandler.log.warning(
 				f"Terminal Access: {fieldName} exceeds max length {maxLength}, truncating"
 			)
-			return strValue[:maxLength]
+			return value[:maxLength]
 	except (ValueError, TypeError):
 		import logHandler
 		logHandler.log.warning(
