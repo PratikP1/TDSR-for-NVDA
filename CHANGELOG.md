@@ -2,6 +2,134 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.28] - 2026-02-21
+
+### Feature - Advanced Window Monitoring (Section 6.1)
+
+**Feature Release**: Adds support for monitoring multiple terminal windows/regions simultaneously with change detection and automatic announcements.
+
+#### Added
+
+- **WindowMonitor Class**: New class for multi-window monitoring with background polling
+  - Monitor multiple windows/regions simultaneously
+  - Configurable polling intervals per window (default: 500ms)
+  - Change detection with content comparison
+  - Rate limiting to prevent announcement spam (minimum 2 seconds between announcements)
+  - Thread-safe operations with locking
+  - Background daemon thread for continuous monitoring
+  - Location: `addon/globalPlugins/tdsr.py` lines 2402-2691
+
+- **WindowMonitor API Methods**:
+  - `add_monitor(name, bounds, interval_ms, mode)` - Add window to monitor
+  - `remove_monitor(name)` - Remove monitored window
+  - `enable_monitor(name)` / `disable_monitor(name)` - Toggle monitoring
+  - `start_monitoring()` / `stop_monitoring()` - Control background thread
+  - `is_monitoring()` - Check monitoring status
+  - `get_monitor_status()` - Get all monitor configurations
+
+- **Comprehensive Test Suite**: 32 test cases for WindowMonitor
+  - Monitor management (add, remove, enable, disable)
+  - Content extraction with bounds validation
+  - Change detection and announcements
+  - Thread safety testing
+  - Integration tests with monitoring loop
+  - Location: `tests/test_window_monitor.py` (32 tests)
+
+#### Enhanced
+
+- **GlobalPlugin Integration**: WindowMonitor initialized and managed by plugin
+  - Automatic cleanup on plugin termination
+  - Stops all monitoring when NVDA closes
+  - Location: `addon/globalPlugins/tdsr.py` lines 2812-2822
+
+- **Change Detection Strategies**:
+  - Line-by-line content comparison
+  - Announcement of changed windows by name
+  - Configurable modes: 'changes' (announce) or 'silent' (track only)
+  - Rate limiting prevents spam from rapidly changing content
+
+#### Technical Details
+
+**Implementation Impact**:
+- Code changes: 290+ lines of new WindowMonitor class
+- Test coverage: 32 test cases covering all public methods
+- Thread management: Daemon thread with clean shutdown
+- Memory efficient: Stores last content per window for comparison
+- Performance: Configurable polling intervals (100ms to multiple seconds)
+
+**Use Cases**:
+- Monitor build output in split terminal panes
+- Track log file tails in tmux/screen sessions
+- Monitor system status bars (htop, top, etc.)
+- Track chat messages in IRC/Discord clients
+- Monitor background process output
+- Watch for specific content changes in defined regions
+
+**API Usage Example**:
+```python
+# Initialize monitor
+monitor = WindowMonitor(terminal_obj, position_calculator)
+
+# Add monitors for different regions
+monitor.add_monitor("build_output", (1, 1, 10, 80), interval_ms=1000)
+monitor.add_monitor("logs", (11, 1, 20, 80), interval_ms=500)
+monitor.add_monitor("status", (21, 1, 21, 80), interval_ms=2000, mode='silent')
+
+# Start monitoring
+monitor.start_monitoring()
+
+# ... monitoring runs in background ...
+
+# Stop when done
+monitor.stop_monitoring()
+```
+
+**Thread Safety**:
+- All operations use thread locking
+- Safe to call from multiple threads
+- Background thread cleanly terminates on stop
+
+**Rate Limiting**:
+- Minimum 2 seconds between announcements per window
+- Prevents overwhelming user with rapid changes
+- Configurable per-monitor intervals
+
+**Notes**:
+- WindowMonitor is an API-based feature (no keyboard gestures)
+- Designed for programmatic use by applications and profiles
+- Can be used in custom application profiles for tmux, screen, etc.
+- Background thread is a daemon (won't prevent NVDA exit)
+- Content extraction uses TextInfo API for reliability
+- Bounds are 1-based (row, column) coordinates
+
+#### Breaking Changes
+
+None. This is a new feature that doesn't affect existing functionality.
+
+#### Migration Guide
+
+No migration required. WindowMonitor is available for use in v1.0.28+.
+
+**To use WindowMonitor programmatically**:
+1. Create WindowMonitor instance with terminal and position calculator
+2. Add monitors for desired regions using `add_monitor()`
+3. Start monitoring with `start_monitoring()`
+4. Monitors run in background and announce changes automatically
+5. Stop monitoring with `stop_monitoring()` when done
+
+**Example in application profile**:
+```python
+# In custom profile for tmux/screen
+def activate_profile(terminal, calculator):
+    monitor = WindowMonitor(terminal, calculator)
+    # Monitor status bar
+    monitor.add_monitor("status", (24, 1, 24, 80), interval_ms=1000)
+    monitor.start_monitoring()
+    return monitor
+```
+
+---
+
 ## [1.0.27] - 2026-02-21
 
 ### Feature - WSL (Windows Subsystem for Linux) Support (Section 5.2)

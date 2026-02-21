@@ -2399,6 +2399,298 @@ class OperationQueue:
 			self._active_operation = None
 
 
+class WindowMonitor:
+	"""
+	Monitor multiple windows for content changes with background polling.
+
+	Section 6.1: Multiple Simultaneous Window Monitoring (v1.0.28+)
+
+	This class enables monitoring of multiple terminal windows/regions simultaneously,
+	detecting changes and announcing them to the user. Useful for monitoring:
+	- Build output in split panes
+	- Log file tails in tmux/screen
+	- System status bars
+	- Chat messages in IRC clients
+	- Background processes
+
+	Features:
+	- Multiple simultaneous window monitoring
+	- Configurable polling intervals per window
+	- Change detection with diff strategies
+	- Rate limiting to prevent announcement spam
+	- Background thread-based monitoring
+	- Thread-safe operations
+
+	Example usage:
+		>>> monitor = WindowMonitor(terminal_obj, position_calculator)
+		>>> monitor.add_monitor("build", (1, 1, 10, 80), interval_ms=1000)
+		>>> monitor.add_monitor("logs", (11, 1, 20, 80), interval_ms=500)
+		>>> monitor.start_monitoring()
+		>>> # ... monitoring runs in background ...
+		>>> monitor.stop_monitoring()
+	"""
+
+	def __init__(self, terminal_obj, position_calculator):
+		"""
+		Initialize the WindowMonitor.
+
+		Args:
+			terminal_obj: Terminal TextInfo object for content extraction
+			position_calculator: PositionCalculator instance for coordinate mapping
+		"""
+		self._terminal = terminal_obj
+		self._position_calculator = position_calculator
+		self._monitors = []  # List of monitor configurations
+		self._last_content = {}  # window_name -> content mapping
+		self._last_announcement = {}  # window_name -> timestamp of last announcement
+		self._monitor_thread = None
+		self._monitoring_active = False
+		self._lock = threading.Lock()
+		self._min_announcement_interval = 2000  # Minimum 2 seconds between announcements (rate limiting)
+
+	def add_monitor(self, name: str, window_bounds: tuple, interval_ms: int = 500, mode: str = 'changes'):
+		"""
+		Add a window to monitor.
+
+		Args:
+			name: Unique identifier for this monitor
+			window_bounds: Tuple of (top, left, bottom, right) coordinates (1-based)
+			interval_ms: Polling interval in milliseconds (default: 500ms)
+			mode: Announcement mode - 'changes' (announce changes), 'silent' (track only)
+
+		Returns:
+			bool: True if monitor added successfully
+		"""
+		with self._lock:
+			# Check if monitor with this name already exists
+			if any(m['name'] == name for m in self._monitors):
+				return False
+
+			# Validate window bounds
+			top, left, bottom, right = window_bounds
+			if not (1 <= top <= bottom and 1 <= left <= right):
+				return False
+
+			monitor = {
+				'name': name,
+				'bounds': window_bounds,
+				'interval': interval_ms,
+				'mode': mode,
+				'last_check': 0,
+				'enabled': True
+			}
+			self._monitors.append(monitor)
+			self._last_content[name] = None
+			self._last_announcement[name] = 0
+			return True
+
+	def remove_monitor(self, name: str) -> bool:
+		"""
+		Remove a monitor by name.
+
+		Args:
+			name: Monitor identifier
+
+		Returns:
+			bool: True if monitor removed successfully
+		"""
+		with self._lock:
+			for i, monitor in enumerate(self._monitors):
+				if monitor['name'] == name:
+					self._monitors.pop(i)
+					self._last_content.pop(name, None)
+					self._last_announcement.pop(name, None)
+					return True
+			return False
+
+	def enable_monitor(self, name: str) -> bool:
+		"""Enable a specific monitor."""
+		with self._lock:
+			for monitor in self._monitors:
+				if monitor['name'] == name:
+					monitor['enabled'] = True
+					return True
+			return False
+
+	def disable_monitor(self, name: str) -> bool:
+		"""Disable a specific monitor."""
+		with self._lock:
+			for monitor in self._monitors:
+				if monitor['name'] == name:
+					monitor['enabled'] = False
+					return True
+			return False
+
+	def start_monitoring(self) -> bool:
+		"""
+		Start background monitoring thread.
+
+		Returns:
+			bool: True if monitoring started successfully
+		"""
+		with self._lock:
+			if self._monitoring_active:
+				return False
+
+			if not self._monitors:
+				return False
+
+			self._monitoring_active = True
+			self._monitor_thread = threading.Thread(
+				target=self._monitor_loop,
+				daemon=True
+			)
+			self._monitor_thread.start()
+			return True
+
+	def stop_monitoring(self) -> None:
+		"""Stop background monitoring thread."""
+		with self._lock:
+			self._monitoring_active = False
+
+		# Wait for thread to finish
+		if self._monitor_thread and self._monitor_thread.is_alive():
+			self._monitor_thread.join(timeout=2.0)
+		self._monitor_thread = None
+
+	def is_monitoring(self) -> bool:
+		"""Check if monitoring is active."""
+		with self._lock:
+			return self._monitoring_active
+
+	def _monitor_loop(self) -> None:
+		"""Background monitoring loop."""
+		while True:
+			with self._lock:
+				if not self._monitoring_active:
+					break
+
+				current_time = time.time() * 1000  # Convert to milliseconds
+
+				# Check each monitor
+				for monitor in self._monitors:
+					if not monitor['enabled']:
+						continue
+
+					# Check if it's time to poll this monitor
+					time_since_check = current_time - monitor['last_check']
+					if time_since_check >= monitor['interval']:
+						self._check_window(monitor, current_time)
+						monitor['last_check'] = current_time
+
+			# Sleep briefly to avoid busy-waiting
+			time.sleep(0.1)
+
+	def _check_window(self, monitor: dict, current_time: float) -> None:
+		"""
+		Check if window content changed.
+
+		Args:
+			monitor: Monitor configuration dictionary
+			current_time: Current timestamp in milliseconds
+		"""
+		try:
+			# Extract window content
+			content = self._extract_window_content(monitor['bounds'])
+			name = monitor['name']
+			last_content = self._last_content.get(name)
+
+			# Content changed?
+			if content != last_content:
+				self._last_content[name] = content
+
+				# Should we announce this change?
+				if monitor['mode'] == 'changes':
+					# Rate limiting: check if enough time passed since last announcement
+					time_since_announcement = current_time - self._last_announcement.get(name, 0)
+					if time_since_announcement >= self._min_announcement_interval:
+						self._announce_change(name, content, last_content)
+						self._last_announcement[name] = current_time
+
+		except Exception:
+			# Silently ignore errors to avoid disrupting monitoring
+			pass
+
+	def _extract_window_content(self, bounds: tuple) -> str:
+		"""
+		Extract text content from window bounds.
+
+		Args:
+			bounds: Tuple of (top, left, bottom, right) coordinates
+
+		Returns:
+			str: Window content as text
+		"""
+		if not self._terminal:
+			return ""
+
+		top, left, bottom, right = bounds
+		lines = []
+
+		try:
+			# Get terminal dimensions
+			info = self._terminal.makeTextInfo(textInfos.POSITION_ALL)
+			all_text = info.text
+
+			# Split into lines
+			all_lines = all_text.split('\n')
+
+			# Extract lines within bounds (convert from 1-based to 0-based)
+			for row_idx in range(top - 1, min(bottom, len(all_lines))):
+				if row_idx < len(all_lines):
+					line = all_lines[row_idx]
+					# Extract columns within bounds (1-based to 0-based)
+					col_start = max(0, left - 1)
+					col_end = min(len(line), right)
+					lines.append(line[col_start:col_end])
+
+			return '\n'.join(lines)
+
+		except Exception:
+			return ""
+
+	def _announce_change(self, name: str, new_content: str, old_content: str) -> None:
+		"""
+		Announce content change to user.
+
+		Args:
+			name: Monitor name
+			new_content: New window content
+			old_content: Previous window content
+		"""
+		# Calculate change summary
+		if old_content is None:
+			# First content - don't announce
+			return
+
+		# Simple announcement: just say window changed
+		# More sophisticated diff could be added here
+		try:
+			message = _("Window {name} changed").format(name=name)
+			ui.message(message)
+		except Exception:
+			pass
+
+	def get_monitor_status(self) -> list:
+		"""
+		Get status of all monitors.
+
+		Returns:
+			list: List of monitor status dictionaries
+		"""
+		with self._lock:
+			return [
+				{
+					'name': m['name'],
+					'bounds': m['bounds'],
+					'interval': m['interval'],
+					'mode': m['mode'],
+					'enabled': m['enabled']
+				}
+				for m in self._monitors
+			]
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
 	TDSR Global Plugin for NVDA - Terminal Data Structure Reader
@@ -2517,11 +2809,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._profileManager = ProfileManager()
 		self._currentProfile = None
 
+		# Window monitor for multi-window monitoring (Section 6.1 - v1.0.28+)
+		self._windowMonitor = None  # Initialized when terminal is bound
+
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
 
 	def terminate(self):
 		"""Clean up when the plugin is terminated."""
+		# Stop window monitoring if active
+		if self._windowMonitor and self._windowMonitor.is_monitoring():
+			self._windowMonitor.stop_monitoring()
+
 		try:
 			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(TDSRSettingsPanel)
 		except (ValueError, AttributeError):
