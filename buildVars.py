@@ -9,18 +9,18 @@ _ = lambda x: x
 # Add-on information variables
 addon_info = {
 	# add-on Name/identifier
-	"addon_name": "TDSR",
+	"addon_name": "terminalAccess",
 	# Add-on summary
-	"addon_summary": _("Terminal Data Structure Reader for NVDA"),
+	"addon_summary": _("Terminal Access for NVDA"),
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
-	"addon_description": _("""Provides enhanced terminal accessibility for Windows Terminal and PowerShell, enabling screen reader users to efficiently navigate and interact with command-line interfaces using TDSR-inspired features."""),
+	"addon_description": _("""Provides enhanced terminal accessibility for Windows Terminal and PowerShell, enabling screen reader users to efficiently navigate and interact with command-line interfaces. Inspired by TDSR (Terminal Data Structure Reader) and incorporates functionality from both TDSR and Speakup. Advanced features inspired by community suggestions and discussions."""),
 	# version
-	"addon_version": "1.0.10",
+	"addon_version": "1.0.32",
 	# Author(s)
-	"addon_author": "TDSR for NVDA Contributors",
+	"addon_author": "Terminal Access Contributors",
 	# URL for the add-on documentation support
-	"addon_url": "https://github.com/PratikP1/TDSR-for-NVDA",
+	"addon_url": "https://github.com/PratikP1/Terminal-Access-for-NVDA",
 	# Documentation file name
 	"addon_docFileName": "readme.html",
 	# Minimum NVDA version supported

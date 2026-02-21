@@ -1,6 +1,6 @@
-# Contributing to TDSR for NVDA
+# Contributing to Terminal Access for NVDA
 
-Thank you for your interest in contributing to TDSR for NVDA! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Terminal Access for NVDA! This document provides guidelines and instructions for contributing to the project.
 
 ## Code of Conduct
 
@@ -23,7 +23,7 @@ If you find a bug, please create an issue on GitHub with:
    - Windows version (10 or 11)
    - NVDA version
    - Terminal application and version
-   - TDSR add-on version
+   - Terminal Access add-on version
 
 ### Suggesting Enhancements
 
@@ -57,44 +57,126 @@ Feature requests are welcome! Please include:
 
 ### Prerequisites
 
-- Python 3.7 or later
-- NVDA screen reader (for testing)
-- Git
-- Text editor or IDE (VS Code recommended)
+- **Python 3.7 or later** (Python 3.7-3.11 tested in CI)
+- **NVDA screen reader** (2019.3 or later) for testing
+- **Git** for version control
+- **Text editor or IDE** (VS Code recommended with Python extension)
 
 ### Setting Up Development Environment
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
-   git clone https://github.com/PratikP1/TDSR-for-NVDA.git
-   cd TDSR-for-NVDA
+   git clone https://github.com/PratikP1/Terminal-Access-for-NVDA.git
+   cd Terminal-Access-for-NVDA
    ```
 
-2. The project structure:
+2. **Install development dependencies**:
+   ```bash
+   pip install -r requirements-dev.txt
    ```
-   TDSR-for-NVDA/
+
+   This installs:
+   - pytest (testing framework)
+   - pytest-cov (coverage reporting)
+   - flake8 (code quality)
+   - wcwidth (Unicode support)
+   - scons (build system)
+   - markdown (documentation)
+
+3. **Understand the project structure**:
+   ```
+   Terminal-Access-for-NVDA/
    ├── addon/
    │   ├── globalPlugins/
-   │   │   └── tdsr.py
+   │   │   └── terminalAccess.py # Main plugin (2600+ lines)
+   │   ├── locale/                # Translation files
    │   └── doc/
    │       └── en/
-   │           └── readme.html
-   ├── manifest.ini
-   ├── buildVars.py
-   └── build.py
+   │           └── readme.html    # User guide
+   ├── tests/
+   │   ├── conftest.py            # Test fixtures and mocks
+   │   ├── test_*.py              # Test files (150+ tests)
+   │   └── README.md
+   ├── docs/                      # Organized documentation
+   │   ├── user/                  # User guides
+   │   ├── developer/             # Architecture & API
+   │   ├── testing/               # Testing guide
+   │   └── archive/               # Historical docs
+   ├── manifest.ini               # Add-on metadata
+   ├── buildVars.py               # Build configuration
+   ├── CHANGELOG.md               # Version history
+   └── requirements-dev.txt       # Dev dependencies
    ```
 
-3. Make your changes to the code
-
-4. Build the add-on:
+4. **Build the add-on**:
    ```bash
+   # Using scons (preferred)
+   scons
+
+   # Or using build.py
    python build.py
+
+   # Non-interactive build (CI)
+   python build.py --non-interactive
    ```
 
-5. Install and test:
-   - The build creates a `.nvda-addon` file
-   - Install it in NVDA by opening the file
-   - Test in a supported terminal application
+5. **Install and test**:
+   - Build creates `terminalAccess-{version}.nvda-addon` file
+   - Press Enter on the file to install in NVDA
+   - Test in Windows Terminal, PowerShell, or cmd.exe
+   - Check NVDA log (NVDA+F1) for errors
+
+### Running Tests
+
+**Run all tests**:
+```bash
+pytest
+```
+
+**Run specific test file**:
+```bash
+pytest tests/test_cache.py
+```
+
+**Run with coverage**:
+```bash
+pytest --cov=addon/globalPlugins --cov-report=html
+# View htmlcov/index.html for coverage report
+```
+
+**Run tests for specific Python version**:
+```bash
+python3.7 -m pytest
+python3.11 -m pytest
+```
+
+### Code Quality Checks
+
+**Run linter**:
+```bash
+flake8 addon/
+```
+
+**Configuration**: See `setup.cfg` for flake8 settings
+- Max line length: 120 characters
+- Ignored: E501 (line length), W503 (line break before binary operator)
+
+### CI/CD Pipeline
+
+Tests run automatically on:
+- Push to main, develop, claude/* branches
+- All pull requests
+
+**Workflow stages**:
+1. **Test**: pytest on Python 3.7-3.11 (Windows)
+2. **Lint**: flake8 code quality check (Ubuntu)
+3. **Build**: scons build verification
+
+**Requirements**:
+- All tests must pass
+- Code coverage ≥70%
+- No linting errors
+- Successful build
 
 ## Coding Standards
 
@@ -180,10 +262,94 @@ Changes
 
 When adding features:
 
-1. Update `addon/doc/en/readme.html`
-2. Add entry to `CHANGELOG.md`
-3. Update `README.md` if needed
-4. Update `ROADMAP.md` for significant features
+1. Update `addon/doc/en/readme.html` with user-facing documentation
+2. Add entry to `CHANGELOG.md` under appropriate version
+3. Update `README.md` if it affects quick start or key features
+4. Update `ARCHITECTURE.md` for architectural changes
+5. Update `API_REFERENCE.md` for new public APIs
+6. Update `ROADMAP.md` for significant features
+
+### Documentation Standards
+
+- **User docs**: Focus on "how to use" with examples
+- **Developer docs**: Focus on "how it works" with code samples
+- **API docs**: Include parameters, returns, and usage examples
+- **Changelog**: Follow "Added/Changed/Fixed" format
+
+## Architecture & Extension Points
+
+### Key Components
+
+Terminal Access is organized into several key components (see `ARCHITECTURE.md` for details):
+
+1. **PositionCache**: Performance optimization for position calculations
+2. **ANSIParser**: Color and formatting detection
+3. **UnicodeWidthHelper**: CJK and combining character support
+4. **ApplicationProfile**: App-specific settings and window definitions
+5. **ProfileManager**: Profile detection and management
+
+### Adding New Features
+
+**Navigation Commands**:
+```python
+@script(
+    description=_("Your command description"),
+    gesture="kb:NVDA+alt+yourkey"
+)
+def script_yourCommand(self, gesture):
+    if not self.isTerminalApp():
+        gesture.send()
+        return
+    # Your implementation
+```
+
+**Application Profiles**:
+```python
+# In ProfileManager._initializeDefaultProfiles()
+myapp = ApplicationProfile('myapp', 'My Application')
+myapp.punctuationLevel = PUNCT_MOST
+myapp.addWindow('status', 1, 2, 1, 80, mode='silent')
+self.profiles['myapp'] = myapp
+```
+
+**Window Definitions**:
+```python
+window = WindowDefinition('name', top, bottom, left, right, mode='announce')
+profile.windows.append(window)
+```
+
+### Code Organization
+
+- **Private methods**: Prefix with `_` (e.g., `_calculatePosition`)
+- **Scripts**: Prefix with `script_` (e.g., `script_readCurrentLine`)
+- **Event handlers**: Prefix with `event_` (e.g., `event_gainFocus`)
+- **Constants**: UPPER_CASE (e.g., `CT_STANDARD`)
+- **Classes**: PascalCase (e.g., `PositionCache`)
+
+### Performance Guidelines
+
+1. **Cache expensive operations**: Use PositionCache for coordinate calculations
+2. **Background threading**: Use for operations >100ms (e.g., large selections)
+3. **Lazy loading**: Load resources on demand
+4. **Early returns**: Check fast conditions first
+
+### Error Handling Pattern
+
+```python
+try:
+    # Operation
+    result = operation()
+except (RuntimeError, AttributeError) as e:
+    # Specific exceptions
+    import logHandler
+    logHandler.log.error(f"Terminal Access: Operation failed - {type(e).__name__}: {e}")
+    ui.message(_("Specific error message"))
+except Exception as e:
+    # Generic fallback
+    import logHandler
+    logHandler.log.error(f"Terminal Access: Unexpected error - {type(e).__name__}: {e}")
+    ui.message(_("Generic error message"))
+```
 
 ## License
 

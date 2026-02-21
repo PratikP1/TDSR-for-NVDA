@@ -1,0 +1,152 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Run at 00:00 UTC every day
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  nightly-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check for changes since last nightly
+        id: check_changes
+        run: |
+          # Get the last nightly tag if it exists
+          LAST_NIGHTLY=$(git tag -l "nightly-*" | sort -V | tail -1)
+
+          if [ -z "$LAST_NIGHTLY" ]; then
+            echo "No previous nightly build found"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "Last nightly: $LAST_NIGHTLY"
+            # Check if there are commits since last nightly
+            CHANGES=$(git rev-list ${LAST_NIGHTLY}..HEAD --count)
+            if [ "$CHANGES" -gt 0 ]; then
+              echo "Found $CHANGES new commits since last nightly"
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "No changes since last nightly"
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Extract version from buildVars.py
+        if: steps.check_changes.outputs.has_changes == 'true'
+        id: version
+        run: |
+          VERSION=$(python3 -c "import buildVars; print(buildVars.addon_info['addon_version'])")
+          NIGHTLY_VERSION="${VERSION}-nightly.$(date +%Y%m%d)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "nightly_version=$NIGHTLY_VERSION" >> $GITHUB_OUTPUT
+          echo "Nightly version: $NIGHTLY_VERSION"
+
+      - name: Update version for nightly
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          # Temporarily modify buildVars.py for nightly version
+          sed -i "s/\"addon_version\": \".*\"/\"addon_version\": \"${{ steps.version.outputs.nightly_version }}\"/" buildVars.py
+
+      - name: Install build dependencies
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install scons markdown
+
+      - name: Build nightly add-on
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          scons
+          ls -lh *.nvda-addon
+
+      - name: Generate nightly changelog
+        if: steps.check_changes.outputs.has_changes == 'true'
+        id: changelog
+        run: |
+          # Get commits since last nightly
+          LAST_NIGHTLY=$(git tag -l "nightly-*" | sort -V | tail -1)
+          if [ -z "$LAST_NIGHTLY" ]; then
+            # Get all recent commits if no previous nightly
+            COMMITS=$(git log --oneline -n 20)
+          else
+            COMMITS=$(git log ${LAST_NIGHTLY}..HEAD --oneline)
+          fi
+
+          # Create changelog
+          echo "# Nightly Build - $(date +%Y-%m-%d)" > nightly_changelog.txt
+          echo "" >> nightly_changelog.txt
+          echo "⚠️ **This is an automated nightly build for testing purposes.**" >> nightly_changelog.txt
+          echo "Use at your own risk. For stable releases, see the [releases page](https://github.com/${{ github.repository }}/releases)." >> nightly_changelog.txt
+          echo "" >> nightly_changelog.txt
+          echo "## Recent Changes" >> nightly_changelog.txt
+          echo "" >> nightly_changelog.txt
+          echo "$COMMITS" >> nightly_changelog.txt
+
+          cat nightly_changelog.txt
+
+      - name: Create nightly tag
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          TAG_NAME="nightly-$(date +%Y%m%d)"
+          git tag -a $TAG_NAME -m "Nightly build $(date +%Y-%m-%d)"
+          git push origin $TAG_NAME
+
+          echo "Created tag: $TAG_NAME"
+
+      - name: Create/Update Nightly Release
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nightly-$(date +%Y%m%d)
+          name: Nightly Build $(date +%Y-%m-%d)
+          body_path: nightly_changelog.txt
+          draft: false
+          prerelease: true
+          files: |
+            terminalAccess-${{ steps.version.outputs.nightly_version }}.nvda-addon
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup old nightly builds
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          # Keep only the last 7 nightly builds
+          NIGHTLIES=$(git tag -l "nightly-*" | sort -V | head -n -7)
+
+          if [ -n "$NIGHTLIES" ]; then
+            echo "Cleaning up old nightly builds:"
+            echo "$NIGHTLIES"
+
+            for tag in $NIGHTLIES; do
+              # Delete the tag
+              git push --delete origin $tag || true
+
+              # Delete the release (requires gh CLI)
+              # gh release delete $tag --yes || true
+            done
+          else
+            echo "No old nightly builds to clean up"
+          fi
+
+      - name: Skip build (no changes)
+        if: steps.check_changes.outputs.has_changes == 'false'
+        run: |
+          echo "No changes detected since last nightly build. Skipping."

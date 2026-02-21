@@ -1,0 +1,154 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, claude/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        # Python versions aligned with NVDA compatibility:
+        # - 3.7: Minimum (NVDA 2019.3)
+        # - 3.11: Maximum tested (current NVDA versions)
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests with pytest
+        run: |
+          python -m pytest tests/ --verbose --cov=addon/globalPlugins --cov-report=term-missing --cov-report=xml
+
+      - name: Check coverage threshold (Section 2.2: Code Quality Gates)
+        if: matrix.python-version == '3.11'
+        shell: bash
+        run: |
+          # Extract coverage percentage from coverage report
+          COVERAGE=$(python -m coverage report --precision=2 | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
+          echo "Current coverage: ${COVERAGE}%"
+
+          # Enforce minimum 70% coverage
+          MIN_COVERAGE=70
+          if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ Coverage ${COVERAGE}% is below minimum threshold of ${MIN_COVERAGE}%"
+            exit 1
+          else
+            echo "✅ Coverage ${COVERAGE}% meets minimum threshold of ${MIN_COVERAGE}%"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 radon
+
+      - name: Run flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 addon/globalPlugins --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 addon/globalPlugins --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+      - name: Check complexity limits (Section 2.2: Code Quality Gates)
+        run: |
+          echo "Checking cyclomatic complexity..."
+          # Check for functions/methods with complexity > 15
+          radon cc addon/globalPlugins -s -a --total-average
+
+          # Fail if any function has complexity > 15
+          COMPLEX_FUNCTIONS=$(radon cc addon/globalPlugins -s -n C)
+          if [ -n "$COMPLEX_FUNCTIONS" ]; then
+            echo "❌ Found functions with high complexity (> 15):"
+            echo "$COMPLEX_FUNCTIONS"
+            echo ""
+            echo "Please refactor these functions to reduce complexity."
+            exit 1
+          else
+            echo "✅ All functions have acceptable complexity"
+          fi
+
+      - name: Check maintainability index (Section 2.2: Code Quality Gates)
+        run: |
+          echo "Checking maintainability index..."
+          # Check maintainability index (A = 100-20, B = 20-10, C = 10-0)
+          # We want at least B grade (> 10)
+          radon mi addon/globalPlugins -s
+
+          LOW_MI=$(radon mi addon/globalPlugins -s -n C)
+          if [ -n "$LOW_MI" ]; then
+            echo "⚠️  Warning: Found files with low maintainability:"
+            echo "$LOW_MI"
+            echo ""
+            echo "Consider refactoring to improve maintainability."
+            # Don't fail, just warn
+          else
+            echo "✅ All files have acceptable maintainability"
+          fi
+
+  build:
+    name: Build Add-on
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install scons markdown
+
+      - name: Build add-on
+        run: |
+          scons
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: TerminalAccess-addon
+          path: '*.nvda-addon'
+          retention-days: 30

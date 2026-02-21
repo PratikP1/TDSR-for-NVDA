@@ -1,0 +1,319 @@
+# Terminal Access for NVDA - Spanish Translation
+# Copyright (C) 2026 Terminal Access for NVDA Contributors
+# This file is distributed under the same license as the Terminal Access package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Terminal Access 1.0.32\n"
+"Report-Msgid-Bugs-To: https://github.com/PratikP1/TDSR-for-NVDA/issues\n"
+"POT-Creation-Date: 2026-02-21 09:00+0000\n"
+"PO-Revision-Date: 2026-02-21 09:00+0000\n"
+"Last-Translator: Terminal Access Team\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Translators: Summary for this add-on to be shown on installation and add-on information
+msgid "Terminal Access for NVDA"
+msgstr ""
+
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid "Provides enhanced terminal accessibility for Windows Terminal and PowerShell, enabling screen reader users to efficiently navigate and interact with command-line interfaces using Terminal Access features."
+msgstr ""
+
+#. Translators: Category name for Terminal Access commands in Input Gestures dialog
+msgid "Terminal Access"
+msgstr ""
+
+#. Translators: Progress dialog initialization message
+msgid "Initializing..."
+msgstr ""
+
+#. Translators: Window change notification
+#, python-format
+msgid "Window {name} changed"
+msgstr ""
+
+#. Translators: Position announcement
+#, python-format
+msgid "Row {row}, column {col}"
+msgstr ""
+
+#. Translators: Message with context
+#, python-format
+msgid "{message}. {context}"
+msgstr ""
+
+#. Translators: Welcome message when Terminal Access becomes active
+msgid "Terminal Access active. Press NVDA+shift+f1 for help."
+msgstr ""
+
+#. Translators: Space character announcement
+msgid "space"
+msgstr ""
+
+#. Translators: Repeated character count
+#, python-format
+msgid "{count} {symbol}"
+msgstr ""
+
+#. Translators: Highlighted text announcement
+#, python-format
+msgid "Highlighted: {text}"
+msgstr ""
+
+#. Translators: Description for opening user guide
+msgid "Opens the Terminal Access user guide"
+msgstr ""
+
+#. Translators: Error when help file not found
+msgid "Help file not found. Please reinstall the add-on."
+msgstr ""
+
+#. Translators: Error when add-on not properly installed
+msgid "Terminal Access add-on not properly installed."
+msgstr ""
+
+#. Translators: Description for reading previous line
+msgid "Read previous line in terminal"
+msgstr ""
+
+#. Translators: Description for reading current line
+msgid "Read current line in terminal. Press twice for indentation level."
+msgstr ""
+
+#. Translators: Description for reading next line
+msgid "Read next line in terminal"
+msgstr ""
+
+#. Translators: Description for reading previous word
+msgid "Read previous word in terminal"
+msgstr ""
+
+#. Translators: Description for reading current word
+msgid "Read current word in terminal"
+msgstr ""
+
+#. Translators: Description for spelling current word
+msgid "Spell current word in terminal"
+msgstr ""
+
+#. Translators: Description for reading next word
+msgid "Read next word in terminal"
+msgstr ""
+
+#. Translators: Description for reading previous character
+msgid "Read previous character in terminal"
+msgstr ""
+
+#. Translators: Description for reading current character
+msgid "Read current character in terminal. Press twice for phonetic. Press three times for character code."
+msgstr ""
+
+#. Translators: Description for reading next character
+msgid "Read next character in terminal"
+msgstr ""
+
+#. Translators: Description for toggling quiet mode
+msgid "Toggle quiet mode in terminal"
+msgstr ""
+
+#. Translators: Quiet mode enabled message
+msgid "Quiet mode on"
+msgstr ""
+
+#. Translators: Quiet mode disabled message
+msgid "Quiet mode off"
+msgstr ""
+
+#. Translators: Description for entering copy mode
+msgid "Enter copy mode in terminal"
+msgstr ""
+
+#. Translators: Copy mode instructions
+msgid "Copy mode. Press L to copy line, S to copy screen, or Escape to cancel."
+msgstr ""
+
+#. Translators: Description for copying line
+msgid "Copy line in copy mode"
+msgstr ""
+
+#. Translators: Error when unable to copy
+msgid "Unable to copy"
+msgstr ""
+
+#. Translators: Success message after copying line
+msgid "Line copied"
+msgstr ""
+
+#. Translators: Error message when selection too large
+#, python-format
+msgid "Selection too large: {rows} rows exceeds maximum of {max}"
+msgstr ""
+
+#. Translators: Error message when selection too wide
+#, python-format
+msgid "Selection too wide: {cols} columns exceeds maximum of {max}"
+msgstr ""
+
+#. Translators: Error message when bookmark manager not initialized
+msgid "Bookmark manager not available"
+msgstr ""
+
+#. Translators: Message when bookmark set
+#, python-format
+msgid "Bookmark {name} set"
+msgstr ""
+
+#. Translators: Error message when bookmark setting fails
+msgid "Failed to set bookmark"
+msgstr ""
+
+#. Translators: Description for jumping to bookmark
+msgid "Jump to a previously set bookmark (use with 0-9)"
+msgstr ""
+
+#. Translators: Message when jumping to bookmark
+#, python-format
+msgid "Jumped to bookmark {name}"
+msgstr ""
+
+#. Translators: Error message when bookmark not found
+#, python-format
+msgid "Bookmark {name} not found"
+msgstr ""
+
+#. Translators: Description for listing bookmarks
+msgid "List all bookmarks"
+msgstr ""
+
+#. Translators: Message listing bookmarks
+#, python-format
+msgid "{count} bookmarks: {names}"
+msgstr ""
+
+#. Translators: Message when no bookmarks exist
+msgid "No bookmarks set"
+msgstr ""
+
+#. Translators: Description for scanning command history
+msgid "Scan terminal output to detect and store command history"
+msgstr ""
+
+#. Translators: Error message when command history manager not initialized
+msgid "Command history not available"
+msgstr ""
+
+#. Translators: Message when commands detected
+#, python-format
+msgid "Found {count} new commands, {total} total"
+msgstr ""
+
+#. Translators: Message when no new commands found
+msgid "No new commands found"
+msgstr ""
+
+#. Translators: Description for previous command navigation
+msgid "Navigate to previous command in history"
+msgstr ""
+
+#. Translators: Message when at beginning of history
+msgid "No previous command"
+msgstr ""
+
+#. Translators: Description for next command navigation
+msgid "Navigate to next command in history"
+msgstr ""
+
+#. Translators: Message when at end of history
+msgid "No next command"
+msgstr ""
+
+#. Translators: Description for listing command history
+msgid "List all commands in history"
+msgstr ""
+
+#. Translators: Message listing command history
+#, python-format
+msgid "{count} commands in history. Recent: {commands}"
+msgstr ""
+
+#. Translators: Message when no commands in history
+msgid "No commands in history"
+msgstr ""
+
+#. Translators: Description for searching output
+msgid "Search terminal output for text pattern"
+msgstr ""
+
+#. Translators: Error message when search manager not initialized
+msgid "Search not available"
+msgstr ""
+
+#. Translators: Search dialog prompt
+msgid "Enter search text:"
+msgstr ""
+
+#. Translators: Search dialog title
+msgid "Search Terminal Output"
+msgstr ""
+
+#. Translators: Message when search finds matches
+#, python-format
+msgid "Found {count} matches"
+msgstr ""
+
+#. Translators: Message when no matches found
+msgid "No matches found"
+msgstr ""
+
+#. Translators: Description for next search match
+msgid "Jump to next search match"
+msgstr ""
+
+#. Translators: Description for previous search match
+msgid "Jump to previous search match"
+msgstr ""
+
+#. Translators: Settings dialog title
+msgid "Terminal Access Settings"
+msgstr ""
+
+#. Translators: General settings group
+msgid "General Settings"
+msgstr ""
+
+#. Translators: Punctuation level label
+msgid "Punctuation Level:"
+msgstr ""
+
+#. Translators: Cursor tracking mode label
+msgid "Cursor Tracking Mode:"
+msgstr ""
+
+#. Translators: Profile management group
+msgid "Application Profiles"
+msgstr ""
+
+#. Translators: Current profile label
+msgid "Current Profile:"
+msgstr ""
+
+#. Translators: Button to activate profile
+msgid "Activate"
+msgstr ""
+
+#. Translators: Button to reset settings
+msgid "Reset to Defaults"
+msgstr ""
+
+#. Translators: OK button
+msgid "OK"
+msgstr ""
+
+#. Translators: Cancel button
+msgid "Cancel"
+msgstr ""
