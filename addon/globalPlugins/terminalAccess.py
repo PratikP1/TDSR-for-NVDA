@@ -3434,7 +3434,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._commandHistoryManager = None  # Initialized when terminal is bound
 
 		# Add settings panel to NVDA preferences
-		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TerminalAccessSettingsPanel)
+		try:
+			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TerminalAccessSettingsPanel)
+		except (AttributeError, TypeError, RuntimeError):
+			# GUI may not be fully initialized yet, which is acceptable
+			# Settings panel will not be available in this case
+			pass
 
 	def terminate(self):
 		"""Clean up when the plugin is terminated."""
@@ -4233,7 +4238,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 
 		# Open NVDA settings dialog to Terminal Access category
-		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TerminalAccessSettingsPanel)
+		try:
+			wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TerminalAccessSettingsPanel)
+		except (AttributeError, TypeError, RuntimeError):
+			# Translators: Error message when settings dialog cannot be opened
+			ui.message(_("Unable to open settings dialog. Please try again."))
 
 	@script(
 		# Translators: Description for cycling cursor tracking modes
