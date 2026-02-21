@@ -54,6 +54,12 @@ PUNCTUATION_SETS = {
 	PUNCT_ALL: None  # All punctuation (process everything)
 }
 
+# Resource limits for security and stability
+MAX_SELECTION_ROWS = 10000  # Maximum rows for selection operations
+MAX_SELECTION_COLS = 1000   # Maximum columns for selection operations
+MAX_WINDOW_DIMENSION = 10000  # Maximum window boundary value
+MAX_REPEATED_SYMBOLS_LENGTH = 50  # Maximum length for repeated symbols string
+
 # Configuration spec for TDSR settings
 confspec = {
 	"cursorTracking": "boolean(default=True)",
@@ -153,6 +159,99 @@ class PositionCache:
 				del self._cache[key]
 
 
+# Input validation helper functions for security hardening
+def _validateInteger(value, minValue, maxValue, default, fieldName):
+	"""
+	Validate and sanitize an integer configuration value.
+
+	Args:
+		value: The value to validate
+		minValue: Minimum allowed value
+		maxValue: Maximum allowed value
+		default: Default value if validation fails
+		fieldName: Name of the field for logging
+
+	Returns:
+		int: Validated value or default if invalid
+	"""
+	try:
+		intValue = int(value)
+		if minValue <= intValue <= maxValue:
+			return intValue
+		else:
+			import logHandler
+			logHandler.log.warning(
+				f"TDSR: {fieldName} value {intValue} out of range [{minValue}, {maxValue}], using default {default}"
+			)
+			return default
+	except (ValueError, TypeError):
+		import logHandler
+		logHandler.log.warning(
+			f"TDSR: Invalid {fieldName} value {value}, using default {default}"
+		)
+		return default
+
+
+def _validateString(value, maxLength, default, fieldName):
+	"""
+	Validate and sanitize a string configuration value.
+
+	Args:
+		value: The value to validate
+		maxLength: Maximum allowed length
+		default: Default value if validation fails
+		fieldName: Name of the field for logging
+
+	Returns:
+		str: Validated value or default if invalid
+	"""
+	try:
+		strValue = str(value)
+		if len(strValue) <= maxLength:
+			return strValue
+		else:
+			import logHandler
+			logHandler.log.warning(
+				f"TDSR: {fieldName} exceeds max length {maxLength}, truncating"
+			)
+			return strValue[:maxLength]
+	except (ValueError, TypeError):
+		import logHandler
+		logHandler.log.warning(
+			f"TDSR: Invalid {fieldName} value, using default"
+		)
+		return default
+
+
+def _validateSelectionSize(startRow, endRow, startCol, endCol):
+	"""
+	Validate selection size against resource limits.
+
+	Args:
+		startRow: Starting row (1-based)
+		endRow: Ending row (1-based)
+		startCol: Starting column (1-based)
+		endCol: Ending column (1-based)
+
+	Returns:
+		tuple: (isValid, errorMessage) where isValid is bool and errorMessage is str or None
+	"""
+	rowCount = abs(endRow - startRow) + 1
+	colCount = abs(endCol - startCol) + 1
+
+	if rowCount > MAX_SELECTION_ROWS:
+		return (False, _("Selection too large: {rows} rows exceeds maximum of {max}").format(
+			rows=rowCount, max=MAX_SELECTION_ROWS
+		))
+
+	if colCount > MAX_SELECTION_COLS:
+		return (False, _("Selection too wide: {cols} columns exceeds maximum of {max}").format(
+			cols=colCount, max=MAX_SELECTION_COLS
+		))
+
+	return (True, None)
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
 	TDSR Global Plugin for NVDA
@@ -169,6 +268,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			oldValue = config.conf["TDSR"]["processSymbols"]
 			# True -> Level 2 (most punctuation), False -> Level 0 (no punctuation)
 			config.conf["TDSR"]["punctuationLevel"] = PUNCT_MOST if oldValue else PUNCT_NONE
+
+		# Validate and sanitize configuration values for security
+		self._sanitizeConfig()
 
 		# Initialize state variables
 		self.lastTerminalAppName = None
@@ -199,7 +301,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
-	
+
+	def _sanitizeConfig(self):
+		"""
+		Validate and sanitize configuration values on plugin initialization.
+
+		Ensures all config values are within safe ranges to prevent crashes and security issues.
+		"""
+		# Validate cursor tracking mode (0-3)
+		config.conf["TDSR"]["cursorTrackingMode"] = _validateInteger(
+			config.conf["TDSR"]["cursorTrackingMode"], 0, 3, 1, "cursorTrackingMode"
+		)
+
+		# Validate punctuation level (0-3)
+		config.conf["TDSR"]["punctuationLevel"] = _validateInteger(
+			config.conf["TDSR"]["punctuationLevel"], 0, 3, 2, "punctuationLevel"
+		)
+
+		# Validate cursor delay (0-1000ms)
+		config.conf["TDSR"]["cursorDelay"] = _validateInteger(
+			config.conf["TDSR"]["cursorDelay"], 0, 1000, 20, "cursorDelay"
+		)
+
+		# Validate repeated symbols string length
+		config.conf["TDSR"]["repeatedSymbolsValues"] = _validateString(
+			config.conf["TDSR"]["repeatedSymbolsValues"],
+			MAX_REPEATED_SYMBOLS_LENGTH,
+			"-_=!",
+			"repeatedSymbolsValues"
+		)
+
+		# Validate window bounds
+		config.conf["TDSR"]["windowTop"] = _validateInteger(
+			config.conf["TDSR"]["windowTop"], 0, MAX_WINDOW_DIMENSION, 0, "windowTop"
+		)
+		config.conf["TDSR"]["windowBottom"] = _validateInteger(
+			config.conf["TDSR"]["windowBottom"], 0, MAX_WINDOW_DIMENSION, 0, "windowBottom"
+		)
+		config.conf["TDSR"]["windowLeft"] = _validateInteger(
+			config.conf["TDSR"]["windowLeft"], 0, MAX_WINDOW_DIMENSION, 0, "windowLeft"
+		)
+		config.conf["TDSR"]["windowRight"] = _validateInteger(
+			config.conf["TDSR"]["windowRight"], 0, MAX_WINDOW_DIMENSION, 0, "windowRight"
+		)
+
 	def terminate(self):
 		"""Clean up when the plugin is terminated."""
 		try:
@@ -1676,7 +1821,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				ui.message(_("Selection copied"))
 			else:
 				ui.message(_("Unable to copy"))
-		except Exception:
+		except (RuntimeError, AttributeError) as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Linear selection copy failed - {type(e).__name__}: {e}")
+			ui.message(_("Unable to copy: terminal not accessible"))
+		except Exception as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Unexpected error in linear selection - {type(e).__name__}: {e}")
 			ui.message(_("Unable to copy"))
 
 	@script(
@@ -1719,6 +1870,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if startCol > endCol:
 				startCol, endCol = endCol, startCol
 
+			# Validate selection size against resource limits
+			isValid, errorMessage = _validateSelectionSize(startRow, endRow, startCol, endCol)
+			if not isValid:
+				ui.message(errorMessage)
+				return
+
 			# Calculate selection size
 			rowCount = endRow - startRow + 1
 
@@ -1743,7 +1900,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# For smaller selections, process synchronously
 			self._performRectangularCopy(terminal, startRow, endRow, startCol, endCol)
 
-		except Exception:
+		except (RuntimeError, AttributeError) as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Rectangular selection failed - {type(e).__name__}: {e}")
+			ui.message(_("Unable to copy: terminal not accessible"))
+		except Exception as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Unexpected error in rectangular selection - {type(e).__name__}: {e}")
 			ui.message(_("Unable to copy"))
 
 	def _copyRectangularSelectionBackground(self, terminal, startRow, endRow, startCol, endCol):
@@ -1759,8 +1922,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		try:
 			self._performRectangularCopy(terminal, startRow, endRow, startCol, endCol)
-		except Exception:
-			# Schedule UI message on main thread
+		except (RuntimeError, AttributeError) as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Background rectangular copy failed - {type(e).__name__}: {e}")
+			wx.CallAfter(ui.message, _("Background copy failed: terminal not accessible"))
+		except Exception as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Unexpected error in background copy - {type(e).__name__}: {e}")
 			wx.CallAfter(ui.message, _("Background copy failed"))
 
 	def _performRectangularCopy(self, terminal, startRow, endRow, startCol, endCol):
@@ -1962,7 +2130,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._lastKnownPosition = (bookmark, lineCount, colCount)
 
 			return (lineCount, colCount)
-		except (RuntimeError, AttributeError, Exception):
+		except (RuntimeError, AttributeError) as e:
+			import logHandler
+			logHandler.log.warning(f"TDSR: Position calculation failed - {type(e).__name__}: {e}")
+			return (0, 0)
+		except Exception as e:
+			import logHandler
+			logHandler.log.error(f"TDSR: Unexpected error in position calculation - {type(e).__name__}: {e}")
 			return (0, 0)
 
 	def _calculatePositionIncremental(self, targetInfo, lastInfo, lastRow, lastCol, comparison):
@@ -2157,12 +2331,33 @@ class TDSRSettingsPanel(SettingsPanel):
 		)
 	
 	def onSave(self):
-		"""Save the settings when the user clicks OK."""
+		"""Save the settings when the user clicks OK with validation."""
+		# Validate and save cursor tracking mode
+		trackingMode = self.cursorTrackingModeChoice.GetSelection()
 		config.conf["TDSR"]["cursorTracking"] = self.cursorTrackingCheckBox.GetValue()
-		config.conf["TDSR"]["cursorTrackingMode"] = self.cursorTrackingModeChoice.GetSelection()
+		config.conf["TDSR"]["cursorTrackingMode"] = _validateInteger(
+			trackingMode, 0, 3, 1, "cursorTrackingMode"
+		)
+
+		# Boolean settings (no validation needed)
 		config.conf["TDSR"]["keyEcho"] = self.keyEchoCheckBox.GetValue()
 		config.conf["TDSR"]["linePause"] = self.linePauseCheckBox.GetValue()
-		config.conf["TDSR"]["punctuationLevel"] = self.punctuationLevelChoice.GetSelection()
 		config.conf["TDSR"]["repeatedSymbols"] = self.repeatedSymbolsCheckBox.GetValue()
-		config.conf["TDSR"]["repeatedSymbolsValues"] = self.repeatedSymbolsValuesText.GetValue()
-		config.conf["TDSR"]["cursorDelay"] = self.cursorDelaySpinner.GetValue()
+
+		# Validate and save punctuation level
+		punctLevel = self.punctuationLevelChoice.GetSelection()
+		config.conf["TDSR"]["punctuationLevel"] = _validateInteger(
+			punctLevel, 0, 3, 2, "punctuationLevel"
+		)
+
+		# Validate and save repeated symbols string
+		repeatedSymbolsValue = self.repeatedSymbolsValuesText.GetValue()
+		config.conf["TDSR"]["repeatedSymbolsValues"] = _validateString(
+			repeatedSymbolsValue, MAX_REPEATED_SYMBOLS_LENGTH, "-_=!", "repeatedSymbolsValues"
+		)
+
+		# Validate and save cursor delay
+		cursorDelay = self.cursorDelaySpinner.GetValue()
+		config.conf["TDSR"]["cursorDelay"] = _validateInteger(
+			cursorDelay, 0, 1000, 20, "cursorDelay"
+		)

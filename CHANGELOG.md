@@ -2,6 +2,63 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.16] - 2026-02-21
+
+### Security Hardening - Input Validation and Resource Protection
+
+**Critical Security Enhancement**: Comprehensive input validation and resource limits to prevent crashes and security issues
+
+### Added
+- **Resource Limit Constants**
+  - `MAX_SELECTION_ROWS = 10000`: Maximum rows for selection operations
+  - `MAX_SELECTION_COLS = 1000`: Maximum columns for selection operations
+  - `MAX_WINDOW_DIMENSION = 10000`: Maximum window boundary value
+  - `MAX_REPEATED_SYMBOLS_LENGTH = 50`: Maximum length for repeated symbols string
+
+- **Input Validation Helper Functions**
+  - `_validateInteger()`: Validates integer config values with range checking
+  - `_validateString()`: Validates string config values with length limits
+  - `_validateSelectionSize()`: Validates selection dimensions against resource limits
+  - All validation functions log warnings to NVDA log for debugging
+
+- **Configuration Sanitization**
+  - New `_sanitizeConfig()` method called during plugin initialization
+  - Validates all config values on startup to ensure safe defaults
+  - Validates: cursor tracking mode (0-3), punctuation level (0-3), cursor delay (0-1000ms)
+  - Validates: window bounds (0-10000), repeated symbols string length (max 50 chars)
+
+### Changed
+- **Settings Panel Validation**
+  - `TDSRSettingsPanel.onSave()` now validates all user inputs before saving
+  - Invalid values are sanitized to safe defaults with warning logs
+  - Prevents invalid configuration from being saved
+
+- **Selection Size Validation**
+  - Rectangular selection now checks size limits before processing
+  - User-friendly error messages for selections exceeding limits
+  - Prevents resource exhaustion from extremely large selections
+
+- **Improved Error Handling**
+  - Specific exception types caught: `RuntimeError`, `AttributeError`
+  - Generic `Exception` catch-all for unexpected errors
+  - All exceptions logged to NVDA log with error type and message
+  - User-friendly error messages distinguish terminal access vs. unexpected errors
+
+### Security Impact
+- **Crash Prevention**: Invalid config values can no longer cause crashes
+- **Resource Protection**: Selection size limits prevent memory exhaustion
+- **Debugging Support**: Error logging aids troubleshooting and bug reports
+- **User Experience**: Clear error messages help users understand issues
+
+### Technical Details
+- Added `logHandler` imports for error logging throughout codebase
+- Enhanced error messages in:
+  - `script_copyLinearSelection`: Terminal access and unexpected errors
+  - `script_copyRectangularSelection`: Terminal access and unexpected errors
+  - `_copyRectangularSelectionBackground`: Background thread error handling
+  - `_calculatePosition`: Position calculation errors with specific logging
+- Config validation on initialization prevents corrupted config from causing issues
+
 ## [1.0.15] - 2026-02-21
 
 ### Performance Optimization - Critical O(n) Issue Resolved
