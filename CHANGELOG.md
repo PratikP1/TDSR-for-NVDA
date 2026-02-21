@@ -4,6 +4,21 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.34] - 2026-02-21
+
+### Fixed
+
+- **Translation Initialization**: Fixed "Error initializing global plugin" that occurred when `addonHandler.initTranslation()` failed
+  - Added fallback translation function `def _(text): return text` in exception handler
+  - Prevents `NameError` when translation system is unavailable
+  - Plugin now initializes successfully even when NVDA translation modules fail to load
+  - Added comprehensive test suite (`test_translation_fallback.py`) to verify fallback behavior
+
+### Improved
+
+- **Test Coverage**: Added 3 new tests for translation fallback functionality
+- **Build Configuration**: Updated `.gitignore` to exclude coverage artifacts (`.coverage`, `coverage.xml`, `htmlcov/`)
+
 ## [1.0.33] - 2026-02-21
 
 ### Documentation - User Guide Enhancements
