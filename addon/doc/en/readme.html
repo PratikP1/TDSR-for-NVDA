@@ -77,6 +77,7 @@
 		<li><a href="#supported-terminals">Supported Terminals</a></li>
 		<li><a href="#getting-started">Getting Started</a></li>
 		<li><a href="#keyboard-commands">Keyboard Commands</a></li>
+		<li><a href="#practical-scenarios">Practical Usage Scenarios</a></li>
 		<li><a href="#settings">Settings</a></li>
 		<li><a href="#tips">Tips and Best Practices</a></li>
 		<li><a href="#troubleshooting">Troubleshooting</a></li>
@@ -95,17 +96,198 @@
 	</p>
 	
 	<h2 id="features">Features</h2>
-	<ul>
-		<li><strong>Line Navigation:</strong> Move through terminal output line by line</li>
-		<li><strong>Word Navigation:</strong> Navigate by word within the terminal</li>
-		<li><strong>Character Navigation:</strong> Move character by character with phonetic spelling support</li>
-		<li><strong>Cursor Tracking:</strong> Automatic announcement of cursor position changes</li>
-		<li><strong>Key Echo:</strong> Hear characters as you type them</li>
-		<li><strong>Symbol Processing:</strong> Speak symbol names instead of the symbols themselves</li>
-		<li><strong>Quiet Mode:</strong> Temporarily disable automatic announcements</li>
-		<li><strong>Selection and Copy:</strong> Select and copy terminal content</li>
-		<li><strong>Configurable Settings:</strong> Customize behavior through NVDA's settings dialog</li>
-	</ul>
+
+	<h3>Core Navigation Features</h3>
+
+	<h4>Line Navigation</h4>
+	<p>Move through terminal output line by line to review command results at your own pace.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> After running <code>dir</code> or <code>ls</code>, use <code>NVDA+Alt+I</code>
+		to hear the current line, <code>NVDA+Alt+O</code> to move to the next line, and <code>NVDA+Alt+U</code>
+		to go back to the previous line. This is perfect for reviewing file listings, log output, or any
+		multi-line command results.
+	</div>
+
+	<h4>Word Navigation</h4>
+	<p>Navigate by word within the terminal for faster review of long command lines and paths.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When reviewing a long path like
+		<code>C:\Users\Username\Documents\Projects\MyApp\src\components\Button.jsx</code>, use
+		<code>NVDA+Alt+K</code> to hear the current word (e.g., "components"), <code>NVDA+Alt+L</code>
+		to move to the next word (e.g., "Button"), and <code>NVDA+Alt+J</code> to go back. This is much
+		faster than character-by-character review for long lines.
+	</div>
+
+	<h4>Character Navigation</h4>
+	<p>Move character by character with phonetic spelling support for precise review.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When verifying a complex filename like <code>data_2024-01-15_v2.json</code>,
+		use <code>NVDA+Alt+Comma</code> to hear each character. Press <code>NVDA+Alt+Comma</code> twice to hear
+		phonetic spelling (e.g., "alpha" for "a", "bravo" for "b"), which is helpful for distinguishing
+		similar-sounding letters. Press three times to hear the character code (e.g., "Character 97, hex 61, a").
+	</div>
+
+	<h3>Advanced Reading Features</h3>
+
+	<h4>Continuous Reading (Say All)</h4>
+	<p>Read continuously from the current position to the end of the terminal buffer.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> After running a command that generates lots of output like
+		<code>git log</code> or <code>npm install</code>, position your review cursor at the beginning
+		with <code>NVDA+Alt+PageUp</code>, then press <code>NVDA+Alt+A</code> to hear all the output
+		read continuously. Press any key to stop reading at any time.
+	</div>
+
+	<h4>Indentation Detection</h4>
+	<p>Announce the indentation level of the current line, essential for Python, YAML, and other indentation-sensitive formats.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When reviewing Python code or YAML configuration files in the terminal,
+		press <code>NVDA+Alt+I</code> twice on any line to hear its indentation. For example, "4 spaces" or
+		"2 tabs" helps you understand the code structure without seeing it visually.
+	</div>
+
+	<h4>Position Announcement</h4>
+	<p>Reports your current row and column position in the terminal buffer.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When navigating through a large file or log output, press
+		<code>NVDA+Alt+P</code> to hear something like "Row 142, column 25". This helps you keep track
+		of where you are in long outputs or when sharing position information with others.
+	</div>
+
+	<h3>Real-Time Feedback Features</h3>
+
+	<h4>Cursor Tracking</h4>
+	<p>Automatically announces the character at the cursor position when it moves.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When using arrow keys to navigate through a command you're editing,
+		cursor tracking announces each character as you move, helping you verify your position. For example,
+		if you're navigating through <code>git commit -m "message"</code>, moving right through it announces
+		"g", "i", "t", "space", "c", and so on.
+	</div>
+
+	<h4>Key Echo</h4>
+	<p>Hear characters as you type them for immediate feedback.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> As you type <code>npm install express</code>, each keystroke is
+		announced: "n", "p", "m", "space", "i", "n", "s", "t", "a", "l", "l", and so on. This helps catch
+		typos immediately and confirms you're typing correctly.
+	</div>
+
+	<h4>Symbol Processing</h4>
+	<p>Speak symbol names instead of the symbols themselves for clarity.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When typing a shell script like <code>#!/bin/bash</code>, with symbol
+		processing enabled, you hear "hash exclamation slash bin slash bash" instead of just the symbol sounds.
+		This is especially useful for commands with many special characters like
+		<code>grep -r "pattern" . | sort -u > results.txt</code>.
+	</div>
+
+	<h3>Advanced Features</h3>
+
+	<h4>Quiet Mode</h4>
+	<p>Temporarily disable automatic announcements when dealing with verbose output.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> Before running a command that produces lots of output like compiling
+		code or installing packages, press <code>NVDA+Alt+Q</code> to enable quiet mode. The command runs
+		without NVDA announcing every cursor movement or output change. When done, press <code>NVDA+Alt+Q</code>
+		again to re-enable announcements and review the output manually.
+	</div>
+
+	<h4>Selection and Copy</h4>
+	<p>Select and copy terminal content using mark-based selection or legacy copy mode.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> To copy a specific section of output:
+		<ol>
+			<li>Navigate to the start of the text you want to copy</li>
+			<li>Press <code>NVDA+Alt+R</code> to set the start mark (you'll hear "Mark start set")</li>
+			<li>Navigate to the end of the text</li>
+			<li>Press <code>NVDA+Alt+R</code> again to set the end mark (you'll hear "Mark end set")</li>
+			<li>Press <code>NVDA+Alt+C</code> to copy the selection as continuous text, or
+			<code>NVDA+Alt+Shift+C</code> for rectangular (column-based) selection</li>
+		</ol>
+		For quick copying, press <code>NVDA+Alt+V</code> to enter copy mode, then press <code>L</code>
+		to copy the current line or <code>S</code> to copy the entire screen.
+	</div>
+
+	<h4>Bookmarks</h4>
+	<p>Set up to 10 bookmarks (0-9) in your terminal buffer for quick navigation.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When working with a long log file, you might bookmark important sections:
+		<ol>
+			<li>Navigate to an error message at row 150</li>
+			<li>Press <code>NVDA+Alt+Shift+1</code> to set bookmark 1</li>
+			<li>Navigate to another error at row 450</li>
+			<li>Press <code>NVDA+Alt+Shift+2</code> to set bookmark 2</li>
+			<li>Later, press <code>NVDA+Alt+1</code> to jump back to the first error instantly</li>
+			<li>Press <code>NVDA+Alt+2</code> to jump to the second error</li>
+		</ol>
+		Press <code>NVDA+Alt+Shift+B</code> to hear a list of all set bookmarks.
+	</div>
+
+	<h4>Command History Navigation</h4>
+	<p>Scan and navigate through commands in your terminal session.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> After running several commands, press <code>NVDA+Alt+Shift+H</code>
+		to scan the terminal output and detect all commands (it looks for command prompts). Then use
+		<code>NVDA+Alt+Up</code> and <code>NVDA+Alt+Down</code> to jump between commands. For example,
+		if you ran <code>ls</code>, <code>cd Documents</code>, and <code>dir</code>, you can jump directly
+		to each command and review its output. Press <code>NVDA+Alt+Shift+L</code> to hear a summary of
+		all detected commands.
+	</div>
+
+	<h4>Output Search</h4>
+	<p>Search terminal output for specific text patterns.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> After running a test suite that produces lots of output, press
+		<code>NVDA+Control+F</code> to open the search dialog. Type "FAILED" to find all failed tests.
+		Terminal Access will announce "Found 3 matches. Match 1 of 3: Test authentication FAILED".
+		Press <code>NVDA+F3</code> to jump to the next match and <code>NVDA+Shift+F3</code> to go to
+		the previous match. This is much faster than manually scanning through hundreds of lines.
+	</div>
+
+	<h4>Window Management</h4>
+	<p>Define and monitor specific regions of the terminal screen.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> In applications like <code>htop</code> or <code>vim</code> that
+		have multiple screen regions, you can define a window to focus on specific areas:
+		<ol>
+			<li>Navigate to the top-left corner of the region you want to monitor (e.g., the process list in htop)</li>
+			<li>Press <code>NVDA+Alt+F2</code> (you'll hear "Window start set")</li>
+			<li>Navigate to the bottom-right corner of the region</li>
+			<li>Press <code>NVDA+Alt+F2</code> again (you'll hear "Window defined")</li>
+			<li>Now press <code>NVDA+Alt+Plus</code> anytime to read just that region</li>
+		</ol>
+		Press <code>NVDA+Alt+F3</code> to clear the window definition when done.
+	</div>
+
+	<h4>Punctuation Levels</h4>
+	<p>Control how much punctuation and symbols are announced (None/Some/Most/All).</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When reading prose or documentation in the terminal, press
+		<code>NVDA+Alt+[</code> to decrease to "Some" punctuation (only essential punctuation like periods
+		and commas are announced). When working with code or configuration files, press <code>NVDA+Alt+]</code>
+		repeatedly to increase to "Most" or "All" to hear every bracket, semicolon, and operator. For example,
+		with "All" level, <code>if (x > 5) { return; }</code> announces every parenthesis, bracket, and semicolon.
+	</div>
+
+	<h4>Directional Reading</h4>
+	<p>Read from cursor to any edge of the screen or buffer.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> When you're in the middle of a long line and want to hear what comes next,
+		press <code>NVDA+Alt+Shift+Right</code> to read from the cursor to the end of the line. If you're
+		reviewing a long log file and want to hear everything from your current position to the end, press
+		<code>NVDA+Alt+Shift+Down</code> to read to the bottom. Use <code>NVDA+Alt+Shift+Left</code> to read
+		back to the beginning of the line and <code>NVDA+Alt+Shift+Up</code> to read to the top of the buffer.
+	</div>
+
+	<h4>Configurable Settings</h4>
+	<p>Customize behavior through NVDA's settings dialog to match your workflow.</p>
+	<div class="info">
+		<strong>Example Usage:</strong> Press <code>NVDA+Alt+Shift+S</code> to open Terminal Access settings.
+		You can adjust cursor tracking delay (useful if holding arrow keys causes too many announcements),
+		enable symbol condensing (so "====" is announced as "4 equals" instead of repeating), customize
+		which symbols to process, and more. See the Settings section below for detailed explanations.
+	</div>
 	
 	<h2 id="supported-terminals">Supported Terminals</h2>
 	<p>TDSR for NVDA supports the following terminal applications on Windows 10 and Windows 11:</p>
@@ -157,8 +339,8 @@
 				<td>Open this user guide</td>
 			</tr>
 			<tr>
-				<td><code>NVDA+Alt+C</code></td>
-				<td>Open TDSR settings</td>
+				<td><code>NVDA+Alt+Shift+S</code></td>
+				<td>Open Terminal Access settings</td>
 			</tr>
 		</tbody>
 	</table>
@@ -237,12 +419,120 @@
 				<td>Read current character phonetically (e.g., "alpha" for "a")</td>
 			</tr>
 			<tr>
+				<td><code>NVDA+Alt+Comma</code> (three times)</td>
+				<td>Announce character code (decimal, hex, and name)</td>
+			</tr>
+			<tr>
 				<td><code>NVDA+Alt+Period</code></td>
 				<td>Read next character</td>
 			</tr>
 		</tbody>
 	</table>
-	
+
+	<h3>Advanced Reading</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+A</code></td>
+				<td>Continuous reading (say all) from cursor to end of buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+I</code> (twice)</td>
+				<td>Announce line indentation level</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+P</code></td>
+				<td>Announce current row and column position</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Screen Edge Navigation</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Home</code></td>
+				<td>Jump to first character of current line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+End</code></td>
+				<td>Jump to last character of current line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+PageUp</code></td>
+				<td>Jump to top of terminal buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+PageDown</code></td>
+				<td>Jump to bottom of terminal buffer</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Directional Reading</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Left Arrow</code></td>
+				<td>Read from cursor to beginning of line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Right Arrow</code></td>
+				<td>Read from cursor to end of line</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Up Arrow</code></td>
+				<td>Read from cursor to top of buffer</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+Down Arrow</code></td>
+				<td>Read from cursor to bottom of buffer</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Punctuation & Tracking</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+[</code></td>
+				<td>Decrease punctuation level (None/Some/Most/All)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+]</code></td>
+				<td>Increase punctuation level (None/Some/Most/All)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Asterisk</code></td>
+				<td>Cycle cursor tracking mode (Off/Standard/Highlight/Window)</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<h3>Selection and Copy</h3>
 	<table>
 		<thead>
@@ -254,11 +544,23 @@
 		<tbody>
 			<tr>
 				<td><code>NVDA+Alt+R</code></td>
-				<td>Start or end selection (text is automatically copied to clipboard when end marker is set)</td>
+				<td>Toggle mark for selection (press 3 times: start, end, clear)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+C</code></td>
+				<td>Copy linear selection (requires marks to be set)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+C</code></td>
+				<td>Copy rectangular selection (requires marks to be set)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+X</code></td>
+				<td>Clear selection marks</td>
 			</tr>
 			<tr>
 				<td><code>NVDA+Alt+V</code></td>
-				<td>Enter copy mode (then press L for line, S for screen)</td>
+				<td>Enter legacy copy mode (then press L for line, S for screen)</td>
 			</tr>
 		</tbody>
 	</table>
@@ -266,9 +568,114 @@
 		<strong>Note:</strong> When using marker-based selection with <code>NVDA+Alt+R</code>,
 		press it once to set the start marker, navigate to the desired end position using review
 		cursor commands, then press <code>NVDA+Alt+R</code> again to set the end marker.
-		The text between the markers will be automatically copied to the clipboard.
+		Press <code>NVDA+Alt+C</code> to copy linear selection or <code>NVDA+Alt+Shift+C</code>
+		to copy rectangular (column-based) selection.
 	</p>
-	
+
+	<h3>Window Management</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+F2</code></td>
+				<td>Set screen window boundaries (press twice: start position, then end position)</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+F3</code></td>
+				<td>Clear screen window</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Plus</code></td>
+				<td>Read window content</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+A</code></td>
+				<td>Read text attributes and colors at cursor</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Bookmarks (v1.0.29+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+0-9</code></td>
+				<td>Set bookmark at current position</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+0-9</code></td>
+				<td>Jump to bookmark</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+B</code></td>
+				<td>List all bookmarks</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Command History (v1.0.31+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Alt+Shift+H</code></td>
+				<td>Scan terminal output to detect and store command history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Up Arrow</code></td>
+				<td>Navigate to previous command in history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Down Arrow</code></td>
+				<td>Navigate to next command in history</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Alt+Shift+L</code></td>
+				<td>List all commands in history</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Search (v1.0.30+)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Command</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>NVDA+Control+F</code></td>
+				<td>Search terminal output for text pattern</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+F3</code></td>
+				<td>Jump to next search match</td>
+			</tr>
+			<tr>
+				<td><code>NVDA+Shift+F3</code></td>
+				<td>Jump to previous search match</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<h3>Modes and Toggles</h3>
 	<table>
 		<thead>
@@ -284,12 +691,177 @@
 			</tr>
 		</tbody>
 	</table>
-	
+
+	<h2 id="practical-scenarios">Practical Usage Scenarios</h2>
+	<p>Here are real-world scenarios demonstrating how to use Terminal Access effectively:</p>
+
+	<h3>Scenario 1: Reviewing Long Command Output</h3>
+	<div class="note">
+		<strong>Situation:</strong> You ran <code>pip list</code> which displays 50+ installed packages.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Press <code>NVDA+Alt+PageUp</code> to jump to the top of the output</li>
+			<li>Use <code>NVDA+Alt+A</code> to have NVDA read all packages continuously</li>
+			<li>If you hear a package name you want to examine, press any key to stop</li>
+			<li>Use <code>NVDA+Alt+I</code> to re-read the current line</li>
+			<li>Use <code>NVDA+Alt+O</code> and <code>NVDA+Alt+U</code> to review surrounding lines</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 2: Debugging a Failed Command</h3>
+	<div class="note">
+		<strong>Situation:</strong> Your build command failed with an error somewhere in hundreds of lines of output.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Press <code>NVDA+Control+F</code> to open search</li>
+			<li>Type "error" or "failed" and press Enter</li>
+			<li>Terminal Access announces: "Found 2 matches. Match 1 of 2: Build error in module auth"</li>
+			<li>Press <code>NVDA+F3</code> to jump to the next error</li>
+			<li>Use <code>NVDA+Alt+U</code> and <code>NVDA+Alt+O</code> to read context around each error</li>
+			<li>Press <code>NVDA+Alt+Shift+1</code> to bookmark the first error location</li>
+			<li>Navigate to the second error and bookmark it with <code>NVDA+Alt+Shift+2</code></li>
+			<li>Jump between bookmarked errors with <code>NVDA+Alt+1</code> and <code>NVDA+Alt+2</code></li>
+		</ol>
+	</div>
+
+	<h3>Scenario 3: Copying Specific Output</h3>
+	<div class="note">
+		<strong>Situation:</strong> You need to copy an error message to share with your team.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Navigate to the beginning of the error message</li>
+			<li>Press <code>NVDA+Alt+R</code> to set the start mark</li>
+			<li>Navigate line by line with <code>NVDA+Alt+O</code> until you reach the end of the error</li>
+			<li>Press <code>NVDA+Alt+R</code> again to set the end mark</li>
+			<li>Press <code>NVDA+Alt+C</code> to copy the selection</li>
+			<li>Paste into your email or chat with <code>Ctrl+V</code></li>
+		</ol>
+		<strong>Alternative:</strong> For copying a single line, press <code>NVDA+Alt+V</code> for copy mode,
+		then press <code>L</code> to quickly copy the current line.
+	</div>
+
+	<h3>Scenario 4: Editing a Complex Command</h3>
+	<div class="note">
+		<strong>Situation:</strong> You need to modify a long command with many parameters.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Type or recall your command: <code>docker run -d -p 8080:80 -v /data:/app/data --name myapp nginx</code></li>
+			<li>Press Home to go to the beginning of the line</li>
+			<li>Use <code>NVDA+Alt+L</code> repeatedly to move word by word: "docker", "run", "-d", "-p", etc.</li>
+			<li>When you reach the word you want to change (e.g., "8080"), press <code>NVDA+Alt+K</code> to confirm</li>
+			<li>Select the word with <code>Ctrl+Shift+Right Arrow</code> and type the new value</li>
+			<li>Use <code>NVDA+Alt+I</code> to review the entire modified command before pressing Enter</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 5: Working with Git Output</h3>
+	<div class="note">
+		<strong>Situation:</strong> You ran <code>git status</code> and need to understand which files are modified.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>After running <code>git status</code>, press <code>NVDA+Alt+Shift+H</code> to scan command history</li>
+			<li>The output shows "modified: src/app.py", "modified: tests/test_app.py", "untracked: README.md"</li>
+			<li>Use <code>NVDA+Alt+O</code> to navigate line by line through the modified files</li>
+			<li>For files of interest, use <code>NVDA+Alt+R</code> twice to select the filename</li>
+			<li>Press <code>NVDA+Alt+C</code> to copy the filename to use in other commands</li>
+			<li>Enable quiet mode with <code>NVDA+Alt+Q</code> before running <code>git diff</code> (produces lots of output)</li>
+			<li>After the diff completes, disable quiet mode and use search to find specific changes</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 6: Monitoring a Long-Running Process</h3>
+	<div class="note">
+		<strong>Situation:</strong> You're running <code>npm install</code> which installs many packages with progress updates.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Before running the command, press <code>NVDA+Alt+Q</code> to enable quiet mode</li>
+			<li>Run <code>npm install</code> - the command executes without constant announcements</li>
+			<li>Wait for the command to complete (you'll hear the new command prompt)</li>
+			<li>Press <code>NVDA+Alt+Q</code> to disable quiet mode</li>
+			<li>Press <code>NVDA+Alt+PageDown</code> to jump to the bottom (most recent output)</li>
+			<li>Use <code>NVDA+Alt+U</code> repeatedly to review the last few lines and check for errors</li>
+			<li>Or press <code>NVDA+Control+F</code> and search for "error" or "warn" to find any issues</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 7: Reviewing Python Code Indentation</h3>
+	<div class="note">
+		<strong>Situation:</strong> You're viewing Python code in the terminal and need to understand its structure.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Navigate to a function definition with <code>NVDA+Alt+I</code></li>
+			<li>Press <code>NVDA+Alt+I</code> twice to hear "No indentation" (top level function)</li>
+			<li>Move to the next line with <code>NVDA+Alt+O</code></li>
+			<li>Press <code>NVDA+Alt+I</code> twice to hear "4 spaces" (function body)</li>
+			<li>Continue navigating and checking indentation to understand the code structure</li>
+			<li>Use <code>NVDA+Alt+Shift+1</code> through <code>NVDA+Alt+Shift+9</code> to bookmark important functions</li>
+			<li>Jump between bookmarks to compare different parts of the code</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 8: Using Table Output (like htop or top)</h3>
+	<div class="note">
+		<strong>Situation:</strong> You're using <code>htop</code> to monitor system processes.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Launch htop</li>
+			<li>Navigate to the top of the process list (skip header rows)</li>
+			<li>Press <code>NVDA+Alt+F2</code> to mark the window start</li>
+			<li>Navigate to the bottom-right of the process list</li>
+			<li>Press <code>NVDA+Alt+F2</code> again to complete the window definition</li>
+			<li>Now press <code>NVDA+Alt+Plus</code> anytime to hear just the process list</li>
+			<li>Use <code>NVDA+Alt+]</code> to increase punctuation level if you need to hear percentage signs and brackets</li>
+			<li>When done, press <code>NVDA+Alt+F3</code> to clear the window</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 9: Copying Columns from Tabular Data</h3>
+	<div class="note">
+		<strong>Situation:</strong> You have a command output like <code>ls -l</code> with columns (permissions, size, date, filename) and only want the filenames.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Navigate to the first filename column in the first row</li>
+			<li>Press <code>NVDA+Alt+P</code> to note the column number (e.g., "Row 1, column 50")</li>
+			<li>Press <code>NVDA+Alt+R</code> to set the start mark</li>
+			<li>Navigate down to the last file with <code>NVDA+Alt+O</code> repeatedly</li>
+			<li>Press Right Arrow to ensure you're at the same column position</li>
+			<li>Press <code>NVDA+Alt+R</code> again to set the end mark</li>
+			<li>Press <code>NVDA+Alt+Shift+C</code> for rectangular (column-based) copy</li>
+			<li>You'll hear "Rectangular selection copied: 15 rows, columns 50 to 80"</li>
+			<li>Now paste - you'll have just the filenames without other columns!</li>
+		</ol>
+	</div>
+
+	<h3>Scenario 10: Verifying Special Characters in Commands</h3>
+	<div class="note">
+		<strong>Situation:</strong> You're typing a complex regex pattern and need to verify every special character.
+		<br><br>
+		<strong>Workflow:</strong>
+		<ol>
+			<li>Press <code>NVDA+Alt+Shift+S</code> to open settings</li>
+			<li>Enable "Process Symbols" so symbols are announced by name</li>
+			<li>Set punctuation level to "All" for maximum detail</li>
+			<li>Start typing your regex: <code>grep -E '^[0-9]{3}-[0-9]{2}-[0-9]{4}$' file.txt</code></li>
+			<li>As you type, hear: "g r e p space dash cap e space quote caret left-bracket 0 dash 9 right-bracket left-brace 3 right-brace..."</li>
+			<li>After typing, press Home then use <code>NVDA+Alt+Period</code> repeatedly to review character by character</li>
+			<li>For any character you're unsure about, press <code>NVDA+Alt+Comma</code> three times to hear its character code</li>
+		</ol>
+	</div>
+
 	<h2 id="settings">Settings</h2>
 	<p>
-		TDSR settings can be accessed through NVDA's preferences dialog. Press <code>NVDA+N</code> 
-		to open the NVDA menu, select Preferences, then Settings. Alternatively, use 
-		<code>NVDA+Alt+C</code> while in a terminal to jump directly to the Terminal Settings category.
+		Terminal Access settings can be accessed through NVDA's preferences dialog. Press <code>NVDA+N</code>
+		to open the NVDA menu, select Preferences, then Settings. Alternatively, use
+		<code>NVDA+Alt+Shift+S</code> while in a terminal to jump directly to the Terminal Settings category.
 	</p>
 	
 	<h3>Available Settings</h3>
