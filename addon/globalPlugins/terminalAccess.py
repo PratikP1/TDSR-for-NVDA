@@ -1,10 +1,10 @@
-# TDSR for NVDA - Global Plugin
-# Copyright (C) 2024 TDSR for NVDA Contributors
+# Terminal Access for NVDA - Global Plugin
+# Copyright (C) 2024 Terminal Access Contributors
 # This add-on is covered by the GNU General Public License, version 3.
 # See the file LICENSE for more details.
 
 """
-TDSR (Terminal Data Structure Reader) Global Plugin for NVDA
+Terminal Access Global Plugin for NVDA
 
 This plugin provides enhanced accessibility features for Windows Terminal and PowerShell,
 including navigation by line/word/character, cursor tracking, and symbol processing.
@@ -52,7 +52,7 @@ Key Features:
 	- Unicode Support: Proper handling of CJK and combining characters
 
 Configuration:
-	Settings are stored in NVDA config under [TDSR] section.
+	Settings are stored in NVDA config under [terminalAccess] section.
 	See confspec for available settings and their defaults.
 
 Performance:
@@ -94,6 +94,9 @@ try:
 	addonHandler.initTranslation()
 except (ImportError, AttributeError, OSError):
 	pass
+
+# Script category for Terminal Access commands
+SCRCAT_TERMINALACCESS = _("Terminal Access")
 
 # Cursor tracking mode constants
 CT_OFF = 0
@@ -142,7 +145,7 @@ confspec = {
 }
 
 # Register configuration
-config.conf.spec["TDSR"] = confspec
+config.conf.spec["terminalAccess"] = confspec
 
 
 class PositionCache:
@@ -1560,7 +1563,7 @@ def _validateInteger(value: Any, minValue: int, maxValue: int, default: int, fie
 		else:
 			import logHandler
 			logHandler.log.warning(
-				f"TDSR: {fieldName} value {intValue} out of range [{minValue}, {maxValue}], using default {default}"
+				f"Terminal Access: {fieldName} value {intValue} out of range [{minValue}, {maxValue}], using default {default}"
 			)
 			return default
 	except (ValueError, TypeError):
@@ -1591,7 +1594,7 @@ def _validateString(value: Any, maxLength: int, default: str, fieldName: str) ->
 		else:
 			import logHandler
 			logHandler.log.warning(
-				f"TDSR: {fieldName} exceeds max length {maxLength}, truncating"
+				f"Terminal Access: {fieldName} exceeds max length {maxLength}, truncating"
 			)
 			return strValue[:maxLength]
 	except (ValueError, TypeError):
@@ -1635,7 +1638,7 @@ class ConfigManager:
 	"""
 	Centralized configuration management for TDSR settings.
 
-	Handles all interactions with config.conf["TDSR"], including:
+	Handles all interactions with config.conf["terminalAccess"], including:
 	- Getting and setting configuration values
 	- Validation and sanitization
 	- Default value management
@@ -1674,13 +1677,13 @@ class ConfigManager:
 	def _migrate_legacy_settings(self) -> None:
 		"""Migrate old configuration keys to new format (one-time migration)."""
 		# Migrate processSymbols to punctuationLevel
-		if "processSymbols" in config.conf["TDSR"]:
-			if "punctuationLevel" not in config.conf["TDSR"]:
-				old_value = config.conf["TDSR"]["processSymbols"]
+		if "processSymbols" in config.conf["terminalAccess"]:
+			if "punctuationLevel" not in config.conf["terminalAccess"]:
+				old_value = config.conf["terminalAccess"]["processSymbols"]
 				# True -> Level 2 (most), False -> Level 0 (none)
-				config.conf["TDSR"]["punctuationLevel"] = PUNCT_MOST if old_value else PUNCT_NONE
+				config.conf["terminalAccess"]["punctuationLevel"] = PUNCT_MOST if old_value else PUNCT_NONE
 			# Remove the old key
-			del config.conf["TDSR"]["processSymbols"]
+			del config.conf["terminalAccess"]["processSymbols"]
 
 	def get(self, key: str, default: Any = None) -> Any:
 		"""
@@ -1694,7 +1697,7 @@ class ConfigManager:
 			The configuration value or default if not found
 		"""
 		try:
-			return config.conf["TDSR"].get(key, default)
+			return config.conf["terminalAccess"].get(key, default)
 		except Exception:
 			return default
 
@@ -1715,7 +1718,7 @@ class ConfigManager:
 			if validated_value is None:
 				return False
 
-			config.conf["TDSR"][key] = validated_value
+			config.conf["terminalAccess"][key] = validated_value
 			return True
 		except Exception as e:
 			import logHandler
@@ -1771,21 +1774,21 @@ class ConfigManager:
 
 	def reset_to_defaults(self) -> None:
 		"""Reset all configuration values to their defaults."""
-		config.conf["TDSR"]["cursorTracking"] = True
-		config.conf["TDSR"]["cursorTrackingMode"] = CT_STANDARD
-		config.conf["TDSR"]["keyEcho"] = True
-		config.conf["TDSR"]["linePause"] = True
-		config.conf["TDSR"]["punctuationLevel"] = PUNCT_MOST
-		config.conf["TDSR"]["repeatedSymbols"] = False
-		config.conf["TDSR"]["repeatedSymbolsValues"] = "-_=!"
-		config.conf["TDSR"]["cursorDelay"] = 20
-		config.conf["TDSR"]["quietMode"] = False
-		config.conf["TDSR"]["verboseMode"] = False
-		config.conf["TDSR"]["windowTop"] = 0
-		config.conf["TDSR"]["windowBottom"] = 0
-		config.conf["TDSR"]["windowLeft"] = 0
-		config.conf["TDSR"]["windowRight"] = 0
-		config.conf["TDSR"]["windowEnabled"] = False
+		config.conf["terminalAccess"]["cursorTracking"] = True
+		config.conf["terminalAccess"]["cursorTrackingMode"] = CT_STANDARD
+		config.conf["terminalAccess"]["keyEcho"] = True
+		config.conf["terminalAccess"]["linePause"] = True
+		config.conf["terminalAccess"]["punctuationLevel"] = PUNCT_MOST
+		config.conf["terminalAccess"]["repeatedSymbols"] = False
+		config.conf["terminalAccess"]["repeatedSymbolsValues"] = "-_=!"
+		config.conf["terminalAccess"]["cursorDelay"] = 20
+		config.conf["terminalAccess"]["quietMode"] = False
+		config.conf["terminalAccess"]["verboseMode"] = False
+		config.conf["terminalAccess"]["windowTop"] = 0
+		config.conf["terminalAccess"]["windowBottom"] = 0
+		config.conf["terminalAccess"]["windowLeft"] = 0
+		config.conf["terminalAccess"]["windowRight"] = 0
+		config.conf["terminalAccess"]["windowEnabled"] = False
 
 
 class WindowManager:
@@ -3293,7 +3296,7 @@ class CommandHistoryManager:
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
-	TDSR Global Plugin for NVDA - Terminal Data Structure Reader
+	Terminal Access Global Plugin for NVDA
 
 	Provides enhanced terminal accessibility for Windows Terminal, PowerShell,
 	Command Prompt, and other console applications.
@@ -3422,7 +3425,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._commandHistoryManager = None  # Initialized when terminal is bound
 
 		# Add settings panel to NVDA preferences
-		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
+		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TerminalAccessSettingsPanel)
 
 	def terminate(self):
 		"""Clean up when the plugin is terminated."""
@@ -3431,7 +3434,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._windowMonitor.stop_monitoring()
 
 		try:
-			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(TDSRSettingsPanel)
+			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(TerminalAccessSettingsPanel)
 		except (ValueError, AttributeError):
 			pass
 		super(GlobalPlugin, self).terminate()
@@ -3603,7 +3606,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				if profile:
 					self._currentProfile = profile
 					import logHandler
-					logHandler.log.info(f"TDSR: Activated profile for {profile.displayName}")
+					logHandler.log.info(f"Terminal Access: Activated profile for {profile.displayName}")
 			else:
 				self._currentProfile = None
 
@@ -3623,7 +3626,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				self.lastTerminalAppName = appName
 				self.announcedHelp = True
 				# Translators: Message announced when entering a terminal application
-				ui.message(_("TDSR terminal support active. Press NVDA+shift+f1 for help."))
+				ui.message(_("Terminal Access support active. Press NVDA+shift+f1 for help."))
 
 	def event_typedCharacter(self, obj, nextHandler, ch):
 		"""
@@ -3636,11 +3639,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		nextHandler()
 
 		# Only handle if in a terminal and keyEcho is enabled
-		if not self.isTerminalApp(obj) or not config.conf["TDSR"]["keyEcho"]:
+		if not self.isTerminalApp(obj) or not config.conf["terminalAccess"]["keyEcho"]:
 			return
 
 		# Don't echo if in quiet mode
-		if config.conf["TDSR"]["quietMode"]:
+		if config.conf["terminalAccess"]["quietMode"]:
 			return
 
 		# Clear position cache on content change
@@ -3649,8 +3652,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Process the character for speech
 		if ch:
 			# Check if we should condense repeated symbols
-			if config.conf["TDSR"]["repeatedSymbols"]:
-				repeatedSymbolsValues = config.conf["TDSR"]["repeatedSymbolsValues"]
+			if config.conf["terminalAccess"]["repeatedSymbols"]:
+				repeatedSymbolsValues = config.conf["terminalAccess"]["repeatedSymbolsValues"]
 
 				# Check if this character is in the list of symbols to condense
 				if ch in repeatedSymbolsValues:
@@ -3722,11 +3725,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		nextHandler()
 
 		# Only handle if in a terminal and cursor tracking is enabled
-		if not self.isTerminalApp(obj) or not config.conf["TDSR"]["cursorTracking"]:
+		if not self.isTerminalApp(obj) or not config.conf["terminalAccess"]["cursorTracking"]:
 			return
 
 		# Don't track if in quiet mode
-		if config.conf["TDSR"]["quietMode"]:
+		if config.conf["terminalAccess"]["quietMode"]:
 			return
 
 		# Cancel any pending cursor tracking announcement
@@ -3735,7 +3738,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._cursorTrackingTimer = None
 
 		# Get cursor delay setting
-		delay = config.conf["TDSR"]["cursorDelay"]
+		delay = config.conf["terminalAccess"]["cursorDelay"]
 
 		# Schedule announcement with delay
 		self._cursorTrackingTimer = wx.CallLater(delay, self._announceCursorPosition, obj)
@@ -3749,7 +3752,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		try:
 			# Get cursor tracking mode
-			trackingMode = config.conf["TDSR"]["cursorTrackingMode"]
+			trackingMode = config.conf["terminalAccess"]["cursorTrackingMode"]
 
 			# Handle different tracking modes
 			if trackingMode == CT_OFF:
@@ -3867,11 +3870,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					# For 'monitor' mode, could add change tracking in future
 
 			# Check global window setting
-			if config.conf["TDSR"]["windowEnabled"]:
-				windowTop = config.conf["TDSR"]["windowTop"]
-				windowBottom = config.conf["TDSR"]["windowBottom"]
-				windowLeft = config.conf["TDSR"]["windowLeft"]
-				windowRight = config.conf["TDSR"]["windowRight"]
+			if config.conf["terminalAccess"]["windowEnabled"]:
+				windowTop = config.conf["terminalAccess"]["windowTop"]
+				windowBottom = config.conf["terminalAccess"]["windowBottom"]
+				windowLeft = config.conf["terminalAccess"]["windowLeft"]
+				windowRight = config.conf["terminalAccess"]["windowRight"]
 
 				# If window is properly defined
 				if windowBottom > 0 and windowRight > 0:
@@ -3909,7 +3912,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	@script(
 		# Translators: Description for the show help gesture
-		description=_("Opens the TDSR user guide"),
+		description=_("Opens the Terminal Access user guide"),
 		gesture="kb:NVDA+shift+f1"
 	)
 	def script_showHelp(self, gesture):
@@ -4084,10 +4087,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 		
-		currentState = config.conf["TDSR"]["quietMode"]
-		config.conf["TDSR"]["quietMode"] = not currentState
+		currentState = config.conf["terminalAccess"]["quietMode"]
+		config.conf["terminalAccess"]["quietMode"] = not currentState
 		
-		if config.conf["TDSR"]["quietMode"]:
+		if config.conf["terminalAccess"]["quietMode"]:
 			# Translators: Message when quiet mode is enabled
 			ui.message(_("Quiet mode on"))
 		else:
@@ -4201,7 +4204,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	
 	@script(
 		# Translators: Description for opening terminal settings
-		description=_("Open TDSR terminal settings"),
+		description=_("Open Terminal Access settings"),
 		gesture="kb:NVDA+alt+shift+s"
 	)
 	def script_openSettings(self, gesture):
@@ -4211,7 +4214,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 
 		# Open NVDA settings dialog to TDSR category
-		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TDSRSettingsPanel)
+		wx.CallAfter(gui.mainFrame._popupSettingsDialog, gui.settingsDialogs.NVDASettingsDialog, TerminalAccessSettingsPanel)
 
 	@script(
 		# Translators: Description for cycling cursor tracking modes
@@ -4225,13 +4228,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 
 		# Get current mode
-		currentMode = config.conf["TDSR"]["cursorTrackingMode"]
+		currentMode = config.conf["terminalAccess"]["cursorTrackingMode"]
 
 		# Cycle to next mode
 		nextMode = (currentMode + 1) % 4
 
 		# Update configuration
-		config.conf["TDSR"]["cursorTrackingMode"] = nextMode
+		config.conf["terminalAccess"]["cursorTrackingMode"] = nextMode
 
 		# Announce new mode
 		modeNames = {
@@ -4271,7 +4274,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				endInfo = reviewPos.copy()
 
 				# Store window boundaries (simplified - storing bookmarks instead of coordinates)
-				config.conf["TDSR"]["windowEnabled"] = True
+				config.conf["terminalAccess"]["windowEnabled"] = True
 				self._windowStartSet = False
 				# Translators: Message when window is defined
 				ui.message(_("Window defined"))
@@ -4290,7 +4293,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 
-		config.conf["TDSR"]["windowEnabled"] = False
+		config.conf["terminalAccess"]["windowEnabled"] = False
 		self._windowStartSet = False
 		# Translators: Message when window is cleared
 		ui.message(_("Window cleared"))
@@ -4306,7 +4309,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 
-		if not config.conf["TDSR"]["windowEnabled"]:
+		if not config.conf["terminalAccess"]["windowEnabled"]:
 			# Translators: Message when no window is defined
 			ui.message(_("No window defined"))
 			return
@@ -4318,10 +4321,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return
 
 			# Get window boundaries
-			windowTop = config.conf["TDSR"]["windowTop"]
-			windowBottom = config.conf["TDSR"]["windowBottom"]
-			windowLeft = config.conf["TDSR"]["windowLeft"]
-			windowRight = config.conf["TDSR"]["windowRight"]
+			windowTop = config.conf["terminalAccess"]["windowTop"]
+			windowBottom = config.conf["terminalAccess"]["windowBottom"]
+			windowLeft = config.conf["terminalAccess"]["windowLeft"]
+			windowRight = config.conf["terminalAccess"]["windowRight"]
 
 			# Validate window definition
 			if windowBottom == 0 or windowRight == 0:
@@ -4732,7 +4735,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		Returns:
 			bool: True if the symbol should be announced, False otherwise.
 		"""
-		level = config.conf["TDSR"]["punctuationLevel"]
+		level = config.conf["terminalAccess"]["punctuationLevel"]
 
 		if level == PUNCT_ALL:
 			# Level 3: Process all symbols
@@ -4756,9 +4759,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 
-		currentLevel = config.conf["TDSR"]["punctuationLevel"]
+		currentLevel = config.conf["terminalAccess"]["punctuationLevel"]
 		newLevel = (currentLevel - 1) % 4
-		config.conf["TDSR"]["punctuationLevel"] = newLevel
+		config.conf["terminalAccess"]["punctuationLevel"] = newLevel
 
 		# Announce new level
 		levelNames = {
@@ -4780,9 +4783,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gesture.send()
 			return
 
-		currentLevel = config.conf["TDSR"]["punctuationLevel"]
+		currentLevel = config.conf["terminalAccess"]["punctuationLevel"]
 		newLevel = (currentLevel + 1) % 4
-		config.conf["TDSR"]["punctuationLevel"] = newLevel
+		config.conf["terminalAccess"]["punctuationLevel"] = newLevel
 
 		# Announce new level
 		levelNames = {
@@ -5236,7 +5239,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for setting bookmark
 		description=_("Set a bookmark at the current review position (use with 0-9)"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gestures=["kb:NVDA+alt+shift+0", "kb:NVDA+alt+shift+1", "kb:NVDA+alt+shift+2",
 		          "kb:NVDA+alt+shift+3", "kb:NVDA+alt+shift+4", "kb:NVDA+alt+shift+5",
 		          "kb:NVDA+alt+shift+6", "kb:NVDA+alt+shift+7", "kb:NVDA+alt+shift+8",
@@ -5271,7 +5274,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for jumping to bookmark
 		description=_("Jump to a previously set bookmark (use with 0-9)"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gestures=["kb:NVDA+alt+0", "kb:NVDA+alt+1", "kb:NVDA+alt+2",
 		          "kb:NVDA+alt+3", "kb:NVDA+alt+4", "kb:NVDA+alt+5",
 		          "kb:NVDA+alt+6", "kb:NVDA+alt+7", "kb:NVDA+alt+8",
@@ -5312,7 +5315,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for listing bookmarks
 		description=_("List all bookmarks"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+alt+shift+b"
 	)
 	def script_listBookmarks(self, gesture):
@@ -5344,7 +5347,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for scanning command history
 		description=_("Scan terminal output to detect and store command history"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+alt+shift+h"
 	)
 	def script_scanCommandHistory(self, gesture):
@@ -5372,7 +5375,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for previous command navigation
 		description=_("Navigate to previous command in history"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+alt+upArrow"
 	)
 	def script_previousCommand(self, gesture):
@@ -5397,7 +5400,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for next command navigation
 		description=_("Navigate to next command in history"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+alt+downArrow"
 	)
 	def script_nextCommand(self, gesture):
@@ -5422,7 +5425,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for listing command history
 		description=_("List all commands in history"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+alt+shift+l"
 	)
 	def script_listCommandHistory(self, gesture):
@@ -5462,7 +5465,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for searching output
 		description=_("Search terminal output for text pattern"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+control+f"
 	)
 	def script_searchOutput(self, gesture):
@@ -5525,7 +5528,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for next search match
 		description=_("Jump to next search match"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+f3"
 	)
 	def script_findNext(self, gesture):
@@ -5555,7 +5558,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@scriptHandler.script(
 		# Translators: Description for previous search match
 		description=_("Jump to previous search match"),
-		category=SCRCAT_TDSR,
+		category=SCRCAT_TERMINALACCESS,
 		gesture="kb:NVDA+shift+f3"
 	)
 	def script_findPrevious(self, gesture):
@@ -5625,15 +5628,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		api.setReviewPosition(info)
 		return info
 
-class TDSRSettingsPanel(SettingsPanel):
+class TerminalAccessSettingsPanel(SettingsPanel):
 	"""
-	Enhanced settings panel for TDSR terminal configuration.
+	Enhanced settings panel for Terminal Access configuration.
 
 	Provides organized UI with logical grouping, tooltips, and reset functionality.
 	Follows NVDA GUI guidelines for accessibility and usability.
 	"""
 
-	# Translators: Title for the TDSR settings category
+	# Translators: Title for the Terminal Access settings category
 	title = _("Terminal Settings")
 
 	def makeSettings(self, settingsSizer):
@@ -5653,7 +5656,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.cursorTrackingCheckBox = cursorGroup.addItem(
 			wx.CheckBox(self, label=_("Enable cursor &tracking"))
 		)
-		self.cursorTrackingCheckBox.SetValue(config.conf["TDSR"]["cursorTracking"])
+		self.cursorTrackingCheckBox.SetValue(config.conf["terminalAccess"]["cursorTracking"])
 		# Translators: Tooltip for cursor tracking checkbox
 		self.cursorTrackingCheckBox.SetToolTip(_(
 			"Automatically announce cursor position changes in the terminal"
@@ -5675,7 +5678,7 @@ class TDSRSettingsPanel(SettingsPanel):
 				_("Window")
 			]
 		)
-		self.cursorTrackingModeChoice.SetSelection(config.conf["TDSR"]["cursorTrackingMode"])
+		self.cursorTrackingModeChoice.SetSelection(config.conf["terminalAccess"]["cursorTrackingMode"])
 		# Translators: Tooltip for cursor tracking mode
 		self.cursorTrackingModeChoice.SetToolTip(_(
 			"Standard: announce line/column changes, "
@@ -5690,7 +5693,7 @@ class TDSRSettingsPanel(SettingsPanel):
 			nvdaControls.SelectOnFocusSpinCtrl,
 			min=0,
 			max=1000,
-			initial=config.conf["TDSR"]["cursorDelay"]
+			initial=config.conf["terminalAccess"]["cursorDelay"]
 		)
 		# Translators: Tooltip for cursor delay
 		self.cursorDelaySpinner.SetToolTip(_(
@@ -5711,7 +5714,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.keyEchoCheckBox = feedbackGroup.addItem(
 			wx.CheckBox(self, label=_("Enable &key echo"))
 		)
-		self.keyEchoCheckBox.SetValue(config.conf["TDSR"]["keyEcho"])
+		self.keyEchoCheckBox.SetValue(config.conf["terminalAccess"]["keyEcho"])
 		# Translators: Tooltip for key echo
 		self.keyEchoCheckBox.SetToolTip(_(
 			"Announce characters as you type in the terminal"
@@ -5722,7 +5725,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.linePauseCheckBox = feedbackGroup.addItem(
 			wx.CheckBox(self, label=_("Pause at &newlines"))
 		)
-		self.linePauseCheckBox.SetValue(config.conf["TDSR"]["linePause"])
+		self.linePauseCheckBox.SetValue(config.conf["terminalAccess"]["linePause"])
 		# Translators: Tooltip for line pause
 		self.linePauseCheckBox.SetToolTip(_(
 			"Brief pause when speaking line content to improve clarity"
@@ -5744,7 +5747,7 @@ class TDSRSettingsPanel(SettingsPanel):
 				_("All")
 			]
 		)
-		self.punctuationLevelChoice.SetSelection(config.conf["TDSR"]["punctuationLevel"])
+		self.punctuationLevelChoice.SetSelection(config.conf["terminalAccess"]["punctuationLevel"])
 		# Translators: Tooltip for punctuation level
 		self.punctuationLevelChoice.SetToolTip(_(
 			"Controls which punctuation symbols are announced. "
@@ -5757,7 +5760,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.quietModeCheckBox = feedbackGroup.addItem(
 			wx.CheckBox(self, label=_("&Quiet mode"))
 		)
-		self.quietModeCheckBox.SetValue(config.conf["TDSR"]["quietMode"])
+		self.quietModeCheckBox.SetValue(config.conf["terminalAccess"]["quietMode"])
 		# Translators: Tooltip for quiet mode
 		self.quietModeCheckBox.SetToolTip(_(
 			"Suppress most TDSR announcements. Use NVDA+Alt+Q to toggle quickly."
@@ -5768,7 +5771,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.verboseModeCheckBox = feedbackGroup.addItem(
 			wx.CheckBox(self, label=_("&Verbose mode (detailed feedback)"))
 		)
-		self.verboseModeCheckBox.SetValue(config.conf["TDSR"]["verboseMode"])
+		self.verboseModeCheckBox.SetValue(config.conf["terminalAccess"]["verboseMode"])
 		# Translators: Tooltip for verbose mode
 		self.verboseModeCheckBox.SetToolTip(_(
 			"Include position and context information with announcements. "
@@ -5788,7 +5791,7 @@ class TDSRSettingsPanel(SettingsPanel):
 		self.repeatedSymbolsCheckBox = advancedGroup.addItem(
 			wx.CheckBox(self, label=_("Condense &repeated symbols"))
 		)
-		self.repeatedSymbolsCheckBox.SetValue(config.conf["TDSR"]["repeatedSymbols"])
+		self.repeatedSymbolsCheckBox.SetValue(config.conf["terminalAccess"]["repeatedSymbols"])
 		# Translators: Tooltip for repeated symbols
 		self.repeatedSymbolsCheckBox.SetToolTip(_(
 			"Condense runs of repeated symbols (e.g., '====' becomes '4 equals')"
@@ -5800,7 +5803,7 @@ class TDSRSettingsPanel(SettingsPanel):
 			_("Repeated symbols to condense:"),
 			wx.TextCtrl
 		)
-		self.repeatedSymbolsValuesText.SetValue(config.conf["TDSR"]["repeatedSymbolsValues"])
+		self.repeatedSymbolsValuesText.SetValue(config.conf["terminalAccess"]["repeatedSymbolsValues"])
 		# Translators: Tooltip for repeated symbols values
 		self.repeatedSymbolsValuesText.SetToolTip(_(
 			"Characters that will be condensed when repeated. "
@@ -5904,23 +5907,23 @@ class TDSRSettingsPanel(SettingsPanel):
 		"""Reset all settings to their default values."""
 		# Translators: Confirmation dialog for resetting settings
 		result = gui.messageBox(
-			_("Are you sure you want to reset all TDSR settings to their default values?"),
+			_("Are you sure you want to reset all Terminal Access settings to their default values?"),
 			_("Confirm Reset"),
 			wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION
 		)
 
 		if result == wx.YES:
 			# Reset all settings to defaults
-			config.conf["TDSR"]["cursorTracking"] = True
-			config.conf["TDSR"]["cursorTrackingMode"] = CT_STANDARD
-			config.conf["TDSR"]["keyEcho"] = True
-			config.conf["TDSR"]["linePause"] = True
-			config.conf["TDSR"]["punctuationLevel"] = PUNCT_MOST
-			config.conf["TDSR"]["repeatedSymbols"] = False
-			config.conf["TDSR"]["repeatedSymbolsValues"] = "-_=!"
-			config.conf["TDSR"]["cursorDelay"] = 20
-			config.conf["TDSR"]["quietMode"] = False
-			config.conf["TDSR"]["verboseMode"] = False  # Phase 6: Verbose Mode
+			config.conf["terminalAccess"]["cursorTracking"] = True
+			config.conf["terminalAccess"]["cursorTrackingMode"] = CT_STANDARD
+			config.conf["terminalAccess"]["keyEcho"] = True
+			config.conf["terminalAccess"]["linePause"] = True
+			config.conf["terminalAccess"]["punctuationLevel"] = PUNCT_MOST
+			config.conf["terminalAccess"]["repeatedSymbols"] = False
+			config.conf["terminalAccess"]["repeatedSymbolsValues"] = "-_=!"
+			config.conf["terminalAccess"]["cursorDelay"] = 20
+			config.conf["terminalAccess"]["quietMode"] = False
+			config.conf["terminalAccess"]["verboseMode"] = False  # Phase 6: Verbose Mode
 
 			# Update UI to reflect defaults
 			self.cursorTrackingCheckBox.SetValue(True)
@@ -5945,33 +5948,33 @@ class TDSRSettingsPanel(SettingsPanel):
 		"""Save the settings when the user clicks OK with validation."""
 		# Validate and save cursor tracking mode
 		trackingMode = self.cursorTrackingModeChoice.GetSelection()
-		config.conf["TDSR"]["cursorTracking"] = self.cursorTrackingCheckBox.GetValue()
-		config.conf["TDSR"]["cursorTrackingMode"] = _validateInteger(
+		config.conf["terminalAccess"]["cursorTracking"] = self.cursorTrackingCheckBox.GetValue()
+		config.conf["terminalAccess"]["cursorTrackingMode"] = _validateInteger(
 			trackingMode, 0, 3, 1, "cursorTrackingMode"
 		)
 
 		# Boolean settings (no validation needed)
-		config.conf["TDSR"]["keyEcho"] = self.keyEchoCheckBox.GetValue()
-		config.conf["TDSR"]["linePause"] = self.linePauseCheckBox.GetValue()
-		config.conf["TDSR"]["repeatedSymbols"] = self.repeatedSymbolsCheckBox.GetValue()
-		config.conf["TDSR"]["quietMode"] = self.quietModeCheckBox.GetValue()
-		config.conf["TDSR"]["verboseMode"] = self.verboseModeCheckBox.GetValue()  # Phase 6: Verbose Mode
+		config.conf["terminalAccess"]["keyEcho"] = self.keyEchoCheckBox.GetValue()
+		config.conf["terminalAccess"]["linePause"] = self.linePauseCheckBox.GetValue()
+		config.conf["terminalAccess"]["repeatedSymbols"] = self.repeatedSymbolsCheckBox.GetValue()
+		config.conf["terminalAccess"]["quietMode"] = self.quietModeCheckBox.GetValue()
+		config.conf["terminalAccess"]["verboseMode"] = self.verboseModeCheckBox.GetValue()  # Phase 6: Verbose Mode
 
 		# Validate and save punctuation level
 		punctLevel = self.punctuationLevelChoice.GetSelection()
-		config.conf["TDSR"]["punctuationLevel"] = _validateInteger(
+		config.conf["terminalAccess"]["punctuationLevel"] = _validateInteger(
 			punctLevel, 0, 3, 2, "punctuationLevel"
 		)
 
 		# Validate and save repeated symbols string
 		repeatedSymbolsValue = self.repeatedSymbolsValuesText.GetValue()
-		config.conf["TDSR"]["repeatedSymbolsValues"] = _validateString(
+		config.conf["terminalAccess"]["repeatedSymbolsValues"] = _validateString(
 			repeatedSymbolsValue, MAX_REPEATED_SYMBOLS_LENGTH, "-_=!", "repeatedSymbolsValues"
 		)
 
 		# Validate and save cursor delay
 		cursorDelay = self.cursorDelaySpinner.GetValue()
-		config.conf["TDSR"]["cursorDelay"] = _validateInteger(
+		config.conf["terminalAccess"]["cursorDelay"] = _validateInteger(
 			cursorDelay, 0, 1000, 20, "cursorDelay"
 		)
 
