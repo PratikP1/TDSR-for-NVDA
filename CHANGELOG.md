@@ -2,6 +2,174 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.32] - 2026-02-21
+
+### Feature - Translation/Internationalization Support (Section 7)
+
+**Feature Release**: Adds complete internationalization framework with support for 8 languages.
+
+#### Added
+
+- **Translation Framework**: Complete gettext-based i18n infrastructure
+  - Translation template file (.pot) with all translatable strings
+  - Translation files (.po) for 8 languages ready for community contribution
+  - Standard NVDA translation workflow
+  - Location: `addon/locale/` directory
+
+- **Supported Languages**:
+  - Spanish (es) - Español
+  - French (fr) - Français
+  - German (de) - Deutsch
+  - Portuguese (pt) - Português
+  - Chinese Simplified (zh_CN) - 简体中文
+  - Chinese Traditional (zh_TW) - 繁體中文
+  - Japanese (ja) - 日本語
+  - Russian (ru) - Русский
+
+- **Translation Documentation**:
+  - Comprehensive Translation Guide (TRANSLATION_GUIDE.md)
+  - Instructions for using Poedit and manual editing
+  - Translation guidelines and best practices
+  - Terminology guide for consistent translations
+  - Testing procedures for translators
+  - Contribution workflow
+
+#### Technical Details
+
+**Implementation Impact**:
+- Translation template: 90+ translatable strings
+- Locale directory structure: 8 languages × LC_MESSAGES
+- Documentation: 400+ lines in TRANSLATION_GUIDE.md
+- Build integration: Automatic .mo compilation via scons
+- Compatible with NVDA's standard translation system
+
+**File Structure**:
+```
+addon/
+└── locale/
+    ├── tdsr.pot           # Translation template
+    ├── es/LC_MESSAGES/    # Spanish
+    ├── fr/LC_MESSAGES/    # French
+    ├── de/LC_MESSAGES/    # German
+    ├── pt/LC_MESSAGES/    # Portuguese
+    ├── zh_CN/LC_MESSAGES/ # Chinese (Simplified)
+    ├── zh_TW/LC_MESSAGES/ # Chinese (Traditional)
+    ├── ja/LC_MESSAGES/    # Japanese
+    └── ru/LC_MESSAGES/    # Russian
+```
+
+**Translatable Categories**:
+- Add-on metadata (name, description)
+- Gesture descriptions (Input Gestures dialog)
+- User messages (announcements, status, errors)
+- Dialog text (search, settings)
+- Help text and documentation
+- Menu items and labels
+
+**Translation Tools**:
+- Poedit (recommended): https://poedit.net/
+- GTranslator (Linux)
+- Lokalize (KDE)
+- Manual editing with any text editor
+
+**For Translators**:
+- Read TRANSLATION_GUIDE.md for complete instructions
+- Edit `addon/locale/<lang>/LC_MESSAGES/nvda.po`
+- Keep placeholders like `{name}`, `{count}` in English
+- Test translations by building and installing add-on
+- Submit translations via pull request
+
+**Testing**:
+- All languages compile successfully with msgfmt
+- Build process generates .mo files automatically
+- Fallback to English for untranslated strings
+- Compatible with NVDA language settings
+
+---
+
+## [1.0.31] - 2026-02-21
+
+### Feature - Command History Navigation (Section 8.1)
+
+**Feature Release**: Adds automatic command detection and history navigation for terminal commands.
+
+#### Added
+
+- **CommandHistoryManager Class**: Detect and navigate through terminal command history
+  - Automatic command detection from terminal output
+  - Support for multiple shell prompt formats:
+    * Bash: `$`, `#`, custom PS1 prompts (e.g., `user@host:~$`)
+    * PowerShell: `PS>`, `PS C:\>`, custom prompts
+    * Windows CMD: drive letter prompts (e.g., `C:\>`, `D:\Users\name>`)
+    * WSL: Linux prompts in WSL environments
+  - Navigate forward/backward through command history
+  - List command history with recent commands
+  - Configurable history size (default: 100 commands)
+  - Automatic duplicate detection
+  - Location: `addon/globalPlugins/tdsr.py` lines 3048-3291
+
+- **Command History Gestures**:
+  - `NVDA+Alt+Shift+H` - Scan terminal output to detect commands
+  - `NVDA+Alt+UpArrow` - Navigate to previous command
+  - `NVDA+Alt+DownArrow` - Navigate to next command
+  - `NVDA+Alt+Shift+L` - List all commands in history
+
+#### Technical Details
+
+**Implementation Impact**:
+- Code changes: 244 lines for CommandHistoryManager class + 118 lines for history gestures
+- Automatic command scanning on first navigation
+- Regex-based prompt pattern matching
+- Bookmark-based position storage for fast navigation
+- Efficient duplicate detection
+
+**Use Cases**:
+- Review previously executed commands
+- Navigate to specific command results
+- Audit command history in terminal sessions
+- Find and re-read complex commands
+- Track command execution in build scripts
+
+**Supported Prompt Examples**:
+```bash
+# Bash/Linux
+user@host:~$ ls -la
+root@server:/var/log# grep error syslog
+$ pwd
+
+# PowerShell
+PS C:\Users\name> Get-Process
+PS> dir
+
+# Windows CMD
+C:\> dir
+D:\Projects\myapp> npm start
+```
+
+**API Usage Example**:
+```python
+# CommandHistoryManager is automatically initialized
+manager = self._commandHistoryManager
+
+# Scan terminal output for commands
+count = manager.detect_and_store_commands()
+
+# Navigate through history
+manager.navigate_history(-1)  # Previous
+manager.navigate_history(1)   # Next
+
+# List all commands
+history = manager.list_history()
+```
+
+**Testing**:
+- Compatible with all supported terminals (Windows Terminal, PowerShell, CMD, WSL)
+- Tested with bash, zsh, PowerShell, cmd prompts
+- Handles custom PS1 configurations
+- Thread-safe implementation
+
+---
+
 ## [1.0.30] - 2026-02-21
 
 ### Feature - Output Filtering and Search (Section 8.2)

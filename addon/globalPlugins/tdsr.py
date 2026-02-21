@@ -3045,6 +3045,252 @@ class OutputSearchManager:
 		self._current_match_index = -1
 
 
+class CommandHistoryManager:
+	"""
+	Navigate through command history in terminal output.
+
+	Section 8.1: Command History Navigation (v1.0.31+)
+
+	This class detects and stores commands from terminal output by parsing
+	common shell prompts and extracting command text. Users can navigate
+	through the command history to review previously executed commands.
+
+	Features:
+	- Automatic command detection from output
+	- Support for multiple shell prompt formats:
+	  * Bash: `$`, `#`, custom PS1
+	  * PowerShell: `PS>`, `PS C:\>`, custom prompts
+	  * Windows CMD: drive letter prompts (e.g., `C:\>`)
+	  * WSL: Linux prompts
+	- Navigate through command history (previous/next)
+	- Jump to specific command
+	- List command history
+	- Configurable history size
+
+	Example usage:
+		>>> manager = CommandHistoryManager(terminal_obj)
+		>>> manager.detect_and_store_commands()
+		>>> manager.navigate_history(-1)  # Previous command
+		>>> manager.navigate_history(1)   # Next command
+		>>> manager.list_history()
+	"""
+
+	def __init__(self, terminal_obj, max_history=100):
+		"""
+		Initialize the CommandHistoryManager.
+
+		Args:
+			terminal_obj: Terminal TextInfo object for reading content
+			max_history: Maximum number of commands to store (default: 100)
+		"""
+		self._terminal = terminal_obj
+		self._max_history = max_history
+		self._history = []  # List of (line_num, command_text, bookmark) tuples
+		self._current_index = -1  # Current position in history (-1 = not navigating)
+		self._last_scan_line = 0  # Last line scanned for commands
+
+		# Common prompt patterns (regex)
+		import re
+		self._prompt_patterns = [
+			# Bash prompts: user@host:~$, root@host:#, simple $/#
+			re.compile(r'^[\w\-\.]+@[\w\-\.]+:[^\$#]*[\$#]\s*(.+)$'),
+			re.compile(r'^[\$#]\s*(.+)$'),
+
+			# PowerShell prompts: PS>, PS C:\>, PS /home/user>
+			re.compile(r'^PS\s+[A-Za-z]:[^>]*>\s*(.+)$'),
+			re.compile(r'^PS\s+/[^>]*>\s*(.+)$'),
+			re.compile(r'^PS>\s*(.+)$'),
+
+			# Windows CMD prompts: C:\>, D:\Users\name>
+			re.compile(r'^[A-Za-z]:[^>]*>\s*(.+)$'),
+
+			# Generic prompt with colon or arrow
+			re.compile(r'^[^\s>:]+[>:]\s*(.+)$'),
+		]
+
+	def detect_and_store_commands(self) -> int:
+		"""
+		Scan terminal output for new commands and store them.
+
+		Returns:
+			Number of new commands detected
+		"""
+		if not self._terminal:
+			return 0
+
+		try:
+			# Get all terminal content
+			info = self._terminal.makeTextInfo(textInfos.POSITION_ALL)
+			content = info.text
+
+			if not content:
+				return 0
+
+			lines = content.split('\n')
+			new_commands = 0
+
+			# Scan from last scan position to end
+			for line_num in range(self._last_scan_line, len(lines)):
+				line = lines[line_num].strip()
+
+				if not line:
+					continue
+
+				# Try to match against prompt patterns
+				for pattern in self._prompt_patterns:
+					match = pattern.match(line)
+					if match:
+						command_text = match.group(1).strip()
+
+						# Ignore empty commands or very short ones
+						if len(command_text) < 2:
+							continue
+
+						# Check if this is a duplicate of last command
+						if self._history and self._history[-1][1] == command_text:
+							continue
+
+						# Create bookmark at this line for navigation
+						try:
+							line_info = self._terminal.makeTextInfo(textInfos.POSITION_ALL)
+							# Move to the specific line
+							for _ in range(line_num):
+								line_info.move(textInfos.UNIT_LINE, 1)
+
+							bookmark = line_info.bookmark
+
+							# Store command (line_num, command_text, bookmark)
+							self._history.append((line_num, command_text, bookmark))
+							new_commands += 1
+
+							# Limit history size
+							if len(self._history) > self._max_history:
+								self._history.pop(0)
+
+						except Exception:
+							# Bookmark creation failed, skip this command
+							pass
+
+						break  # Found a match, no need to try other patterns
+
+			# Update last scan position
+			self._last_scan_line = len(lines)
+
+			return new_commands
+
+		except Exception:
+			return 0
+
+	def navigate_history(self, direction: int) -> bool:
+		"""
+		Navigate through command history.
+
+		Args:
+			direction: -1 for previous, 1 for next
+
+		Returns:
+			True if navigation successful, False otherwise
+		"""
+		if not self._history:
+			return False
+
+		# If not currently navigating, start from the end
+		if self._current_index == -1:
+			if direction < 0:
+				self._current_index = len(self._history) - 1
+			else:
+				self._current_index = 0
+		else:
+			# Move index
+			self._current_index += direction
+
+			# Clamp to valid range
+			if self._current_index < 0:
+				self._current_index = 0
+				return False
+			elif self._current_index >= len(self._history):
+				self._current_index = len(self._history) - 1
+				return False
+
+		# Jump to the command position
+		return self._jump_to_command(self._current_index)
+
+	def _jump_to_command(self, index: int) -> bool:
+		"""
+		Jump to a specific command in history.
+
+		Args:
+			index: Index in history list
+
+		Returns:
+			True if jump successful, False otherwise
+		"""
+		if index < 0 or index >= len(self._history):
+			return False
+
+		try:
+			line_num, command_text, bookmark = self._history[index]
+
+			# Move to the bookmark
+			info = self._terminal.makeTextInfo(bookmark)
+			api.setReviewPosition(info)
+
+			# Announce the command
+			from . import ui
+			ui.message(f"Command {index + 1} of {len(self._history)}: {command_text}")
+
+			return True
+
+		except Exception:
+			return False
+
+	def jump_to_command(self, index: int) -> bool:
+		"""
+		Jump directly to a command by index (1-based).
+
+		Args:
+			index: Command number (1-based)
+
+		Returns:
+			True if jump successful, False otherwise
+		"""
+		if index < 1 or index > len(self._history):
+			return False
+
+		self._current_index = index - 1
+		return self._jump_to_command(self._current_index)
+
+	def list_history(self) -> list:
+		"""
+		Get list of all commands in history.
+
+		Returns:
+			List of (index, command_text) tuples
+		"""
+		return [(i + 1, cmd[1]) for i, cmd in enumerate(self._history)]
+
+	def get_current_command(self) -> str:
+		"""
+		Get the currently selected command.
+
+		Returns:
+			Command text or empty string
+		"""
+		if self._current_index >= 0 and self._current_index < len(self._history):
+			return self._history[self._current_index][1]
+		return ""
+
+	def clear_history(self) -> None:
+		"""Clear all command history."""
+		self._history.clear()
+		self._current_index = -1
+		self._last_scan_line = 0
+
+	def get_history_count(self) -> int:
+		"""Get number of commands in history."""
+		return len(self._history)
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
 	TDSR Global Plugin for NVDA - Terminal Data Structure Reader
@@ -3171,6 +3417,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Output search manager for filtering and search (Section 8.2 - v1.0.30+)
 		self._searchManager = None  # Initialized when terminal is bound
+
+		# Command history manager for navigation (Section 8.1 - v1.0.31+)
+		self._commandHistoryManager = None  # Initialized when terminal is bound
 
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
@@ -3339,6 +3588,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Initialize OutputSearchManager for this terminal (Section 8.2 - v1.0.30+)
 			if not self._searchManager:
 				self._searchManager = OutputSearchManager(obj)
+
+			# Initialize CommandHistoryManager for this terminal (Section 8.1 - v1.0.31+)
+			if not self._commandHistoryManager:
+				self._commandHistoryManager = CommandHistoryManager(obj, max_history=100)
 
 			# Clear position cache when switching terminals
 			self._positionCalculator.clear_cache()
@@ -5085,6 +5338,124 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			# Translators: Message when no bookmarks exist
 			ui.message(_("No bookmarks set"))
+
+	# Section 8.1: Command history navigation gestures (v1.0.31+)
+
+	@scriptHandler.script(
+		# Translators: Description for scanning command history
+		description=_("Scan terminal output to detect and store command history"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+alt+shift+h"
+	)
+	def script_scanCommandHistory(self, gesture):
+		"""Scan terminal output for commands."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._commandHistoryManager:
+			# Translators: Error message when command history manager not initialized
+			ui.message(_("Command history not available"))
+			return
+
+		# Scan terminal output for commands
+		count = self._commandHistoryManager.detect_and_store_commands()
+
+		if count > 0:
+			total = self._commandHistoryManager.get_history_count()
+			# Translators: Message when commands detected
+			ui.message(_("Found {count} new commands, {total} total").format(count=count, total=total))
+		else:
+			# Translators: Message when no new commands found
+			ui.message(_("No new commands found"))
+
+	@scriptHandler.script(
+		# Translators: Description for previous command navigation
+		description=_("Navigate to previous command in history"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+alt+upArrow"
+	)
+	def script_previousCommand(self, gesture):
+		"""Navigate to previous command."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._commandHistoryManager:
+			# Translators: Error message when command history manager not initialized
+			ui.message(_("Command history not available"))
+			return
+
+		# Auto-scan if history is empty
+		if self._commandHistoryManager.get_history_count() == 0:
+			self._commandHistoryManager.detect_and_store_commands()
+
+		if not self._commandHistoryManager.navigate_history(-1):
+			# Translators: Message when at beginning of history
+			ui.message(_("No previous command"))
+
+	@scriptHandler.script(
+		# Translators: Description for next command navigation
+		description=_("Navigate to next command in history"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+alt+downArrow"
+	)
+	def script_nextCommand(self, gesture):
+		"""Navigate to next command."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._commandHistoryManager:
+			# Translators: Error message when command history manager not initialized
+			ui.message(_("Command history not available"))
+			return
+
+		# Auto-scan if history is empty
+		if self._commandHistoryManager.get_history_count() == 0:
+			self._commandHistoryManager.detect_and_store_commands()
+
+		if not self._commandHistoryManager.navigate_history(1):
+			# Translators: Message when at end of history
+			ui.message(_("No next command"))
+
+	@scriptHandler.script(
+		# Translators: Description for listing command history
+		description=_("List all commands in history"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+alt+shift+l"
+	)
+	def script_listCommandHistory(self, gesture):
+		"""List all commands in history."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._commandHistoryManager:
+			# Translators: Error message when command history manager not initialized
+			ui.message(_("Command history not available"))
+			return
+
+		# Auto-scan if history is empty
+		if self._commandHistoryManager.get_history_count() == 0:
+			self._commandHistoryManager.detect_and_store_commands()
+
+		history = self._commandHistoryManager.list_history()
+
+		if history:
+			count = len(history)
+			# Create a summary of recent commands (last 5)
+			recent = history[-5:] if count > 5 else history
+			commands_list = ", ".join([f"{idx}: {cmd[:30]}" for idx, cmd in recent])
+
+			# Translators: Message listing command history
+			ui.message(_("{count} commands in history. Recent: {commands}").format(
+				count=count,
+				commands=commands_list
+			))
+		else:
+			# Translators: Message when no commands in history
+			ui.message(_("No commands in history"))
 
 	# Section 8.2: Output search functionality gestures (v1.0.30+)
 
