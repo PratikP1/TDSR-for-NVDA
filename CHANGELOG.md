@@ -2,6 +2,68 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.29] - 2026-02-21
+
+### Feature - Bookmark Functionality (Section 8.3)
+
+**Feature Release**: Adds bookmark/marker functionality for quick navigation in terminal output.
+
+#### Added
+
+- **BookmarkManager Class**: Manage named bookmarks for quick position recall
+  - Set bookmarks at any position with names or numbers (0-9)
+  - Jump to bookmarks instantly
+  - List all bookmarks
+  - Remove bookmarks
+  - Maximum 50 bookmarks per terminal
+  - Location: `addon/globalPlugins/tdsr.py` lines 2694-2837
+
+- **Bookmark Gestures**:
+  - `NVDA+Alt+Shift+0-9` - Set bookmark 0-9 at current position
+  - `NVDA+Alt+0-9` - Jump to bookmark 0-9
+  - `NVDA+Alt+Shift+B` - List all bookmarks
+
+#### Technical Details
+
+**Implementation Impact**:
+- Code changes: 144 lines for BookmarkManager class + 106 lines for gestures
+- Integration with GlobalPlugin lifecycle
+- Automatic initialization when terminal is bound
+- Position-relative bookmarks (survives content changes when possible)
+
+**Use Cases**:
+- Mark important log entries for later review
+- Save positions in long command output
+- Quick navigation in code review sessions
+- Mark error locations in build output
+- Navigate between different sections of output
+
+**API Usage Example**:
+```python
+# BookmarkManager is automatically initialized
+manager = self._bookmarkManager
+
+# Set bookmark
+manager.set_bookmark("error_line")
+
+# Jump to bookmark
+manager.jump_to_bookmark("error_line")
+
+# List bookmarks
+bookmarks = manager.list_bookmarks()
+
+# Remove bookmark
+manager.remove_bookmark("error_line")
+```
+
+**Notes**:
+- Bookmarks are position-based using NVDA TextInfo bookmarks
+- Invalid bookmarks (after content changes) are automatically removed
+- Quick number bookmarks (0-9) for fast workflows
+- Named bookmarks can be added via API for advanced use
+
+---
+
 ## [1.0.28] - 2026-02-21
 
 ### Feature - Advanced Window Monitoring (Section 6.1)

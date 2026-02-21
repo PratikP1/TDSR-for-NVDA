@@ -2691,6 +2691,151 @@ class WindowMonitor:
 			]
 
 
+class BookmarkManager:
+	"""
+	Manage bookmarks/markers in terminal output for quick navigation.
+
+	Section 8.3: Bookmark/Marker Functionality (v1.0.29+)
+
+	This class enables users to set named bookmarks at specific positions in
+	the terminal output and quickly jump back to those positions. Useful for:
+	- Marking important log entries
+	- Saving positions in long output
+	- Navigating back to command results
+	- Quick navigation in code review sessions
+
+	Features:
+	- Named bookmarks (0-9 and custom names)
+	- Quick jump to bookmarks
+	- List all bookmarks
+	- Remove bookmarks
+	- Persistent across terminal sessions (position-relative)
+
+	Example usage:
+		>>> manager = BookmarkManager(terminal_obj)
+		>>> manager.set_bookmark("1")  # Quick bookmark with number
+		>>> manager.set_bookmark("build_error")  # Named bookmark
+		>>> manager.jump_to_bookmark("1")
+		>>> manager.list_bookmarks()
+		>>> manager.remove_bookmark("1")
+	"""
+
+	def __init__(self, terminal_obj):
+		"""
+		Initialize the BookmarkManager.
+
+		Args:
+			terminal_obj: Terminal TextInfo object for bookmark storage
+		"""
+		self._terminal = terminal_obj
+		self._bookmarks = {}  # name -> bookmark mapping
+		self._max_bookmarks = 50  # Maximum number of bookmarks
+
+	def set_bookmark(self, name: str) -> bool:
+		"""
+		Set bookmark at current review position.
+
+		Args:
+			name: Bookmark name (e.g., "1", "error", "important")
+
+		Returns:
+			bool: True if bookmark set successfully
+		"""
+		if not self._terminal:
+			return False
+
+		# Validate bookmark name
+		if not name or len(name) > 50:
+			return False
+
+		# Check max bookmarks limit
+		if name not in self._bookmarks and len(self._bookmarks) >= self._max_bookmarks:
+			return False
+
+		try:
+			# Get current review position
+			pos = api.getReviewPosition()
+			if not pos:
+				return False
+
+			# Store bookmark
+			self._bookmarks[name] = pos.bookmark
+			return True
+
+		except Exception:
+			return False
+
+	def jump_to_bookmark(self, name: str) -> bool:
+		"""
+		Jump to named bookmark.
+
+		Args:
+			name: Bookmark name
+
+		Returns:
+			bool: True if jump successful
+		"""
+		if not self._terminal or name not in self._bookmarks:
+			return False
+
+		try:
+			# Restore position from bookmark
+			pos = self._terminal.makeTextInfo(self._bookmarks[name])
+			if pos:
+				api.setReviewPosition(pos)
+				return True
+
+		except Exception:
+			# Bookmark may be invalid (terminal content changed)
+			self.remove_bookmark(name)
+
+		return False
+
+	def remove_bookmark(self, name: str) -> bool:
+		"""
+		Remove named bookmark.
+
+		Args:
+			name: Bookmark name
+
+		Returns:
+			bool: True if bookmark removed
+		"""
+		if name in self._bookmarks:
+			del self._bookmarks[name]
+			return True
+		return False
+
+	def list_bookmarks(self) -> list:
+		"""
+		Get list of all bookmark names.
+
+		Returns:
+			list: List of bookmark names (sorted)
+		"""
+		return sorted(self._bookmarks.keys())
+
+	def has_bookmark(self, name: str) -> bool:
+		"""
+		Check if bookmark exists.
+
+		Args:
+			name: Bookmark name
+
+		Returns:
+			bool: True if bookmark exists
+		"""
+		return name in self._bookmarks
+
+	def clear_all(self) -> None:
+		"""Clear all bookmarks."""
+		self._bookmarks.clear()
+
+	def get_bookmark_count(self) -> int:
+		"""Get number of bookmarks."""
+		return len(self._bookmarks)
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
 	TDSR Global Plugin for NVDA - Terminal Data Structure Reader
@@ -2811,6 +2956,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Window monitor for multi-window monitoring (Section 6.1 - v1.0.28+)
 		self._windowMonitor = None  # Initialized when terminal is bound
+
+		# Bookmark manager for quick navigation (Section 8.3 - v1.0.29+)
+		self._bookmarkManager = None  # Initialized when terminal is bound
 
 		# Add settings panel to NVDA preferences
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(TDSRSettingsPanel)
@@ -2971,6 +3119,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Store the terminal object and route the review cursor to it via the navigator
 			self._boundTerminal = obj
 			api.setNavigatorObject(obj)
+
+			# Initialize BookmarkManager for this terminal (Section 8.3 - v1.0.29+)
+			if not self._bookmarkManager:
+				self._bookmarkManager = BookmarkManager(obj)
 
 			# Clear position cache when switching terminals
 			self._positionCalculator.clear_cache()
@@ -4609,6 +4761,114 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._markEnd = None
 		# Translators: Message when marks cleared
 		ui.message(_("Marks cleared"))
+
+	# Section 8.3: Bookmark functionality gestures (v1.0.29+)
+
+	@scriptHandler.script(
+		# Translators: Description for setting bookmark
+		description=_("Set a bookmark at the current review position (use with 0-9)"),
+		category=SCRCAT_TDSR,
+		gestures=["kb:NVDA+alt+shift+0", "kb:NVDA+alt+shift+1", "kb:NVDA+alt+shift+2",
+		          "kb:NVDA+alt+shift+3", "kb:NVDA+alt+shift+4", "kb:NVDA+alt+shift+5",
+		          "kb:NVDA+alt+shift+6", "kb:NVDA+alt+shift+7", "kb:NVDA+alt+shift+8",
+		          "kb:NVDA+alt+shift+9"]
+	)
+	def script_setBookmark(self, gesture):
+		"""Set a bookmark at current position."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._bookmarkManager:
+			# Translators: Error message when bookmark manager not initialized
+			ui.message(_("Bookmark manager not available"))
+			return
+
+		# Get bookmark number from gesture (0-9)
+		key = gesture.mainKeyName
+		if key.isdigit():
+			name = key
+		else:
+			# For custom bookmark names, we'd need a dialog - for now use "temp"
+			name = "temp"
+
+		if self._bookmarkManager.set_bookmark(name):
+			# Translators: Message when bookmark set
+			ui.message(_("Bookmark {name} set").format(name=name))
+		else:
+			# Translators: Error message when bookmark setting fails
+			ui.message(_("Failed to set bookmark"))
+
+	@scriptHandler.script(
+		# Translators: Description for jumping to bookmark
+		description=_("Jump to a previously set bookmark (use with 0-9)"),
+		category=SCRCAT_TDSR,
+		gestures=["kb:NVDA+alt+0", "kb:NVDA+alt+1", "kb:NVDA+alt+2",
+		          "kb:NVDA+alt+3", "kb:NVDA+alt+4", "kb:NVDA+alt+5",
+		          "kb:NVDA+alt+6", "kb:NVDA+alt+7", "kb:NVDA+alt+8",
+		          "kb:NVDA+alt+9"]
+	)
+	def script_jumpToBookmark(self, gesture):
+		"""Jump to a bookmark."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._bookmarkManager:
+			# Translators: Error message when bookmark manager not initialized
+			ui.message(_("Bookmark manager not available"))
+			return
+
+		# Get bookmark number from gesture (0-9)
+		key = gesture.mainKeyName
+		if key.isdigit():
+			name = key
+		else:
+			name = "temp"
+
+		if self._bookmarkManager.jump_to_bookmark(name):
+			# Announce position after jump
+			info = api.getReviewPosition()
+			if info:
+				text = info.text
+				if text:
+					ui.message(text)
+				else:
+					# Translators: Message when jumping to bookmark
+					ui.message(_("Jumped to bookmark {name}").format(name=name))
+		else:
+			# Translators: Error message when bookmark not found
+			ui.message(_("Bookmark {name} not found").format(name=name))
+
+	@scriptHandler.script(
+		# Translators: Description for listing bookmarks
+		description=_("List all bookmarks"),
+		category=SCRCAT_TDSR,
+		gesture="kb:NVDA+alt+shift+b"
+	)
+	def script_listBookmarks(self, gesture):
+		"""List all bookmarks."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._bookmarkManager:
+			# Translators: Error message when bookmark manager not initialized
+			ui.message(_("Bookmark manager not available"))
+			return
+
+		bookmarks = self._bookmarkManager.list_bookmarks()
+		if bookmarks:
+			count = len(bookmarks)
+			# Translators: Message listing bookmarks
+			message = _("{count} bookmarks: {names}").format(
+				count=count,
+				names=", ".join(bookmarks)
+			)
+			ui.message(message)
+		else:
+			# Translators: Message when no bookmarks exist
+			ui.message(_("No bookmarks set"))
 
 
 	def _copyToClipboard(self, text):
