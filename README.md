@@ -81,7 +81,7 @@ TDSR for NVDA enables screen reader users to efficiently navigate and interact w
 
 **Total: 18 supported terminal applications**
 
-For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](ADVANCED_USER_GUIDE.md#third-party-terminal-support).
+For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md#third-party-terminal-support).
 
 ## System Requirements
 
@@ -382,47 +382,78 @@ TDSR-for-NVDA/
 ├── addon/
 │   ├── globalPlugins/
 │   │   └── tdsr.py          # Main plugin code
+│   ├── locale/              # Translation files (v1.0.32+)
 │   └── doc/
 │       └── en/
 │           └── readme.html   # User guide
+├── docs/                     # Organized documentation
+│   ├── user/                # User guides and FAQs
+│   ├── developer/           # Architecture and API docs
+│   ├── testing/             # Testing procedures
+│   └── archive/             # Historical/research documents
+├── tests/                    # Automated test suite
+├── .github/                  # CI/CD and issue templates
 ├── manifest.ini              # Add-on metadata
 ├── buildVars.py             # Build configuration
+├── CHANGELOG.md             # Version history
 └── README.md                # This file
 ```
 
 ## Documentation
 
-TDSR provides comprehensive documentation for users and developers:
+TDSR provides comprehensive documentation organized by audience:
 
 ### User Documentation
 - **[README.md](README.md)** (this file) - Quick start and feature overview
-- **[ADVANCED_USER_GUIDE.md](ADVANCED_USER_GUIDE.md)** - In-depth guide covering:
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
+- **[INSTALL.md](INSTALL.md)** - Installation instructions
+- **[ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md)** - In-depth guide covering:
   - Application profiles and customization
-  - Third-party terminal emulator guide
+  - Third-party terminal emulator guide (18 terminals)
   - Window definitions and screen regions
   - Unicode, CJK, RTL text, and emoji support
   - Performance optimization tips
   - Advanced troubleshooting scenarios
-- **[FAQ.md](FAQ.md)** - Frequently asked questions covering:
+- **[FAQ.md](docs/user/FAQ.md)** - Frequently asked questions covering:
   - General questions and getting started
   - Terminal compatibility
   - Feature usage and workflows
   - Troubleshooting common issues
   - Advanced topics
+- **[WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md)** - Windows Subsystem for Linux testing guide
+- **[TRANSLATION_GUIDE.md](docs/user/TRANSLATION_GUIDE.md)** - Guide for translators (v1.0.32+)
 
 ### Developer Documentation
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and architecture (550+ lines)
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation (900+ lines)
+- **[ARCHITECTURE.md](docs/developer/ARCHITECTURE.md)** - System design and architecture (550+ lines)
+- **[API_REFERENCE.md](docs/developer/API_REFERENCE.md)** - Complete API documentation (900+ lines)
+- **[ROADMAP.md](docs/developer/ROADMAP.md)** - Project roadmap and future plans
+- **[FUTURE_ENHANCEMENTS.md](docs/developer/FUTURE_ENHANCEMENTS.md)** - Future enhancement tracking
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup and contribution guidelines
 
+### Testing Documentation
+- **[TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md)** - Comprehensive testing guide covering:
+  - Automated testing with pytest
+  - Manual testing procedures
+  - CI/CD integration
+  - Test writing guidelines
+
 ### Change History
-- **[CHANGELOG.md](CHANGELOG.md)** - Detailed version history with all changes from v1.0.0 to current
+- **[CHANGELOG.md](CHANGELOG.md)** - Detailed version history with all changes from v1.0.0 to current (v1.0.32+)
+
+### Release Documentation
+- **[RELEASE.md](RELEASE.md)** - Release process and procedures
 
 ### GitHub Resources
 - **Issue Templates** - Structured templates for:
   - Bug reports
   - Feature requests
   - Terminal support requests
+
+### Archived Documentation
+Historical and research documentation is preserved in `docs/archive/`:
+- **Development artifacts** - Phase specifications, implementation summaries
+- **Research documents** - Feature analysis, API research
+- **Legacy documentation** - Superseded by current documentation but kept for reference
 
 ## Contributing
 
