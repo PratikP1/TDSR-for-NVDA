@@ -407,19 +407,36 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Get the current caret position
 			info = obj.makeTextInfo(textInfos.POSITION_CARET)
 
-			# Try to get cursor coordinates (this may not be available in all terminals)
-			# For now, we'll use a simplified approach
-			currentPos = (info.bookmark.startOffset if hasattr(info, 'bookmark') else None)
+			# Calculate current row and column
+			currentRow, currentCol = self._calculatePosition(info)
+
+			# Check if position changed
+			currentPos = (currentRow, currentCol)
 			if currentPos == self._lastCaretPosition:
 				return
 
 			self._lastCaretPosition = currentPos
 
 			# Check if position is within window bounds
-			# Note: This is a simplified implementation. In a real implementation,
-			# we would need to track actual row/column coordinates
-			self._announceStandardCursor(obj)
+			windowTop = config.conf["TDSR"]["windowTop"]
+			windowBottom = config.conf["TDSR"]["windowBottom"]
+			windowLeft = config.conf["TDSR"]["windowLeft"]
+			windowRight = config.conf["TDSR"]["windowRight"]
+
+			# If window not properly defined, fall back to standard
+			if windowBottom == 0 or windowRight == 0:
+				self._announceStandardCursor(obj)
+				return
+
+			# Check if within window boundaries
+			if (windowTop <= currentRow <= windowBottom and
+				windowLeft <= currentCol <= windowRight):
+				# Within window - announce normally
+				self._announceStandardCursor(obj)
+			# else: Outside window - silent
+
 		except Exception:
+			# On error, fall back to standard tracking
 			self._announceStandardCursor(obj)
 
 	def _extractHighlightedText(self, text):
@@ -843,10 +860,63 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.message(_("No window defined"))
 			return
 
-		# For now, this is a simplified implementation
-		# A full implementation would track actual row/column coordinates
-		# Translators: Message placeholder for window reading
-		ui.message(_("Window reading not fully implemented"))
+		try:
+			terminal = self._boundTerminal
+			if not terminal:
+				ui.message(_("Unable to read window"))
+				return
+
+			# Get window boundaries
+			windowTop = config.conf["TDSR"]["windowTop"]
+			windowBottom = config.conf["TDSR"]["windowBottom"]
+			windowLeft = config.conf["TDSR"]["windowLeft"]
+			windowRight = config.conf["TDSR"]["windowRight"]
+
+			# Validate window definition
+			if windowBottom == 0 or windowRight == 0:
+				ui.message(_("Window not properly defined"))
+				return
+
+			# Extract window content line by line
+			lines = []
+			currentInfo = terminal.makeTextInfo(textInfos.POSITION_FIRST)
+
+			# Move to window top
+			currentInfo.move(textInfos.UNIT_LINE, windowTop - 1)
+
+			# Extract each line in window
+			for row in range(windowTop, windowBottom + 1):
+				lineInfo = currentInfo.copy()
+				lineInfo.expand(textInfos.UNIT_LINE)
+				lineText = lineInfo.text.rstrip('\n\r')
+
+				# Extract column range (convert to 0-based indexing)
+				startIdx = max(0, windowLeft - 1)
+				endIdx = min(len(lineText), windowRight)
+
+				if startIdx < len(lineText):
+					columnText = lineText[startIdx:endIdx]
+				else:
+					columnText = ''  # Line too short
+
+				if columnText.strip():  # Only include non-empty lines
+					lines.append(columnText)
+
+				# Move to next line
+				moved = currentInfo.move(textInfos.UNIT_LINE, 1)
+				if moved == 0:
+					break
+
+			# Read window content
+			windowText = ' '.join(lines)
+			if windowText:
+				speech.speakText(windowText)
+			else:
+				# Translators: Message when window contains no text
+				ui.message(_("Window is empty"))
+
+		except Exception:
+			ui.message(_("Unable to read window"))
 
 	@script(
 		# Translators: Description for reading text attributes
@@ -1124,43 +1194,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				ui.message(_("Position unavailable"))
 				return
 
-			# Calculate row (line number)
-			# Create info from start to current position
-			terminal = self._boundTerminal
-			if not terminal:
+			# Calculate position using helper method
+			lineCount, colCount = self._calculatePosition(reviewPos)
+
+			if lineCount == 0 or colCount == 0:
 				ui.message(_("Position unavailable"))
 				return
-
-			startInfo = terminal.makeTextInfo(textInfos.POSITION_FIRST)
-			currentInfo = reviewPos.copy()
-
-			# Count lines from start to current position
-			lineCount = 1
-			try:
-				testInfo = startInfo.copy()
-				while testInfo.compareEndPoints(currentInfo, "startToStart") < 0:
-					moved = testInfo.move(textInfos.UNIT_LINE, 1)
-					if moved == 0:
-						break
-					lineCount += 1
-			except (RuntimeError, AttributeError):
-				pass
-
-			# Calculate column (character position in line)
-			lineInfo = reviewPos.copy()
-			lineInfo.expand(textInfos.UNIT_LINE)
-			lineInfo.collapse()
-
-			colCount = 1
-			try:
-				testInfo = lineInfo.copy()
-				while testInfo.compareEndPoints(reviewPos, "startToStart") < 0:
-					moved = testInfo.move(textInfos.UNIT_CHARACTER, 1)
-					if moved == 0:
-						break
-					colCount += 1
-			except (RuntimeError, AttributeError):
-				pass
 
 			# Translators: Message announcing row and column position
 			ui.message(_("Row {row}, column {col}").format(row=lineCount, col=colCount))
@@ -1573,21 +1612,63 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			startInfo = terminal.makeTextInfo(self._markStart)
 			endInfo = terminal.makeTextInfo(self._markEnd)
 
-			# Calculate row and column bounds
-			# This is a simplified implementation - a full implementation would
-			# need to accurately track row/column coordinates
-			startInfo.expand(textInfos.UNIT_LINE)
-			endInfo.expand(textInfos.UNIT_LINE)
+			# Calculate row and column coordinates
+			startRow, startCol = self._calculatePosition(startInfo)
+			endRow, endCol = self._calculatePosition(endInfo)
 
-			# For now, just copy the lines (simplified rectangular selection)
-			startInfo.setEndPoint(endInfo, "endToEnd")
-			text = startInfo.text
+			# Validate coordinates
+			if startRow == 0 or startCol == 0 or endRow == 0 or endCol == 0:
+				ui.message(_("Unable to determine position"))
+				return
 
-			if text and self._copyToClipboard(text):
-				# Translators: Message for rectangular selection
-				ui.message(_("Rectangular selection copied"))
+			# Ensure correct order (top-left to bottom-right)
+			if startRow > endRow:
+				startRow, endRow = endRow, startRow
+			if startCol > endCol:
+				startCol, endCol = endCol, startCol
+
+			# Extract rectangular region line by line
+			lines = []
+			currentInfo = terminal.makeTextInfo(textInfos.POSITION_FIRST)
+
+			# Move to start row
+			currentInfo.move(textInfos.UNIT_LINE, startRow - 1)
+
+			# Extract each line in range
+			for row in range(startRow, endRow + 1):
+				lineInfo = currentInfo.copy()
+				lineInfo.expand(textInfos.UNIT_LINE)
+				lineText = lineInfo.text.rstrip('\n\r')
+
+				# Extract column range (convert to 0-based indexing)
+				startIdx = max(0, startCol - 1)
+				endIdx = min(len(lineText), endCol)
+
+				if startIdx < len(lineText):
+					columnText = lineText[startIdx:endIdx]
+				else:
+					columnText = ''  # Line too short
+
+				lines.append(columnText)
+
+				# Move to next line
+				moved = currentInfo.move(textInfos.UNIT_LINE, 1)
+				if moved == 0:
+					break
+
+			# Join lines and copy to clipboard
+			rectangularText = '\n'.join(lines)
+
+			if rectangularText and self._copyToClipboard(rectangularText):
+				# Translators: Message for successful rectangular selection copy
+				ui.message(_("Rectangular selection copied: {rows} rows, columns {start} to {end}").format(
+					rows=len(lines),
+					start=startCol,
+					end=endCol
+				))
 			else:
 				ui.message(_("Unable to copy"))
+
 		except Exception:
 			ui.message(_("Unable to copy"))
 
@@ -1649,6 +1730,52 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return None
 		api.setReviewPosition(info)
 		return info
+
+	def _calculatePosition(self, textInfo):
+		"""
+		Calculate row and column coordinates from TextInfo.
+
+		This method counts from the beginning of the terminal buffer to determine
+		the row (line number) and column (character position) of a given TextInfo position.
+
+		Args:
+			textInfo: TextInfo object to get position for
+
+		Returns:
+			Tuple of (row, column) as 1-based integers, or (0, 0) if calculation fails
+		"""
+		terminal = self._boundTerminal
+		if not terminal:
+			return (0, 0)
+
+		try:
+			# Calculate row (line number from start of buffer)
+			startInfo = terminal.makeTextInfo(textInfos.POSITION_FIRST)
+			lineCount = 1
+
+			testInfo = startInfo.copy()
+			while testInfo.compareEndPoints(textInfo, "startToStart") < 0:
+				moved = testInfo.move(textInfos.UNIT_LINE, 1)
+				if moved == 0:
+					break
+				lineCount += 1
+
+			# Calculate column (character position in current line)
+			lineInfo = textInfo.copy()
+			lineInfo.expand(textInfos.UNIT_LINE)
+			lineInfo.collapse()
+
+			colCount = 1
+			testInfo = lineInfo.copy()
+			while testInfo.compareEndPoints(textInfo, "startToStart") < 0:
+				moved = testInfo.move(textInfos.UNIT_CHARACTER, 1)
+				if moved == 0:
+					break
+				colCount += 1
+
+			return (lineCount, colCount)
+		except (RuntimeError, AttributeError, Exception):
+			return (0, 0)
 
 	def _processSymbol(self, char):
 		"""

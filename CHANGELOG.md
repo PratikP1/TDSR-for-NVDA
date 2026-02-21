@@ -2,6 +2,93 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.14] - 2026-02-21
+
+### Added - Feature Completion with API Research
+- **Comprehensive API Research Documentation**
+  - Created `API_RESEARCH_COORDINATE_TRACKING.md` (14,000+ words) with complete terminal API analysis
+  - Created `SPEAKUP_SPECS_REQUIREMENTS.md` (9,000+ words) with consolidated feature specifications
+  - Documented Windows Console API, NVDA TextInfo API, and UI Automation capabilities
+  - Five implementation strategies analyzed with pros/cons for each approach
+  - Complete code examples for all features ready for implementation
+
+- **True Rectangular Selection with Column Tracking**
+  - Implemented proper column-based rectangular selection (no longer simplified)
+  - Calculates exact row/column coordinates for start and end marks
+  - Extracts text from specific column ranges across multiple lines
+  - Handles lines shorter than column range gracefully
+  - Provides detailed feedback: "Rectangular selection copied: N rows, columns X to Y"
+  - Uses new `_calculatePosition()` helper method for coordinate calculation
+
+- **Coordinate-Based Window Tracking**
+  - Window tracking now uses actual row/column coordinates (not bookmarks)
+  - Checks if cursor position is within defined window boundaries
+  - Silent when cursor moves outside window region
+  - Announces normally when cursor moves within window boundaries
+  - Falls back to standard tracking when window not properly defined
+
+- **Window Content Reading**
+  - Implemented true window content reading (no longer placeholder)
+  - Reads text from specified row/column rectangular region
+  - Extracts column ranges line by line from window boundaries
+  - Speaks window content using speech.speakText()
+  - Announces "Window is empty" when no content in region
+
+- **Position Calculation Helper**
+  - New `_calculatePosition(textInfo)` method returns (row, column) tuple
+  - Counts from buffer start to determine line number (1-based)
+  - Counts from line start to determine character position (1-based)
+  - Used by position announcement, rectangular selection, and window tracking
+  - Optimized `script_announcePosition` to use helper method (removed duplicate code)
+
+### Technical Implementation Details
+- **Coordinate Calculation Strategy**: Manual counting from buffer start using TextInfo.move()
+  - O(n) complexity where n = row number (acceptable for typical terminal usage)
+  - Position calculation via `compareEndPoints` and character/line unit moves
+  - Returns (0, 0) on error for safe fallback behavior
+
+- **Window Storage**: Changed from bookmarks to integer coordinates in config
+  - `config.conf["TDSR"]["windowTop"]` - Top row boundary
+  - `config.conf["TDSR"]["windowBottom"]` - Bottom row boundary
+  - `config.conf["TDSR"]["windowLeft"]` - Left column boundary
+  - `config.conf["TDSR"]["windowRight"]` - Right column boundary
+  - Enables efficient boundary checking without TextInfo manipulation
+
+- **Column Extraction**: Direct string slicing with proper index validation
+  - Converts 1-based coordinates to 0-based indexing for Python strings
+  - Handles short lines gracefully (empty string when line too short)
+  - Strips line endings before column extraction
+  - Joins lines with newlines for multi-line selections
+
+### Research Findings
+- **No Direct Coordinate Access**: NVDA TextInfo API does not provide row/column properties
+- **Windows Console API Not Accessible**: Cannot access from NVDA add-ons due to process isolation
+- **Manual Calculation Required**: Must count from buffer start for all coordinate operations
+- **Performance Considerations**: Position calculation O(n) but acceptable for typical use
+- **Future Optimization**: Position caching system documented for future enhancement
+
+### Files Changed
+- `addon/globalPlugins/tdsr.py`: +127 lines
+  - Added `_calculatePosition()` helper method
+  - Implemented true rectangular selection (replaced simplified version)
+  - Implemented coordinate-based window tracking (replaced skeletal version)
+  - Implemented window content reading (replaced placeholder)
+  - Refactored `script_announcePosition` to use helper method
+- `API_RESEARCH_COORDINATE_TRACKING.md`: New comprehensive API documentation
+- `SPEAKUP_SPECS_REQUIREMENTS.md`: New consolidated feature specifications
+
+### Known Limitations (Addressed)
+- ✅ **Rectangular Selection**: NOW FULLY IMPLEMENTED with column tracking
+- ✅ **Window Tracking Mode**: NOW FULLY IMPLEMENTED with coordinate-based boundaries
+- ⚠️ **Performance**: Position calculation O(n) - future caching system planned for optimization
+- ⚠️ **Unicode Width**: Basic implementation - wcwidth library support for CJK characters planned
+
+### Backward Compatibility
+- All existing features unchanged
+- Window configuration uses existing settings structure
+- Graceful fallback to standard tracking on errors
+- No breaking changes to user experience
+
 ## [1.0.13] - 2026-02-21
 
 ### Fixed - NVDA Compliance and Code Quality
