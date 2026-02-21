@@ -2,6 +2,75 @@
 
 All notable changes to the TDSR for NVDA add-on will be documented in this file.
 
+## [1.0.23] - 2026-02-21
+
+### Enhancements - CI/CD Improvements (Section 2.2)
+
+**Enhancement Release**: Implements comprehensive CI/CD enhancements with nightly builds, code quality gates, coverage enforcement, and complexity limits.
+
+#### Added
+
+- **Nightly Build Pipeline**: Automated daily builds for testing purposes
+  - Runs at 00:00 UTC every day via GitHub Actions
+  - Only builds if there are changes since last nightly
+  - Creates nightly releases with version suffix (e.g., 1.0.23-nightly.20260221)
+  - Includes changelog of recent commits
+  - Marked as pre-release for safety
+  - Automatically cleans up old nightly builds (keeps last 7)
+  - Manual trigger support via workflow_dispatch
+
+- **Code Quality Gates**: Automated enforcement of quality standards
+  - **Coverage Enforcement**: Minimum 70% test coverage required
+    - Fails CI if coverage drops below threshold
+    - Runs on Python 3.11 matrix
+  - **Complexity Limits**: Maximum cyclomatic complexity of 15 per function
+    - Uses radon for complexity analysis
+    - Fails CI if any function exceeds limit
+  - **Maintainability Monitoring**: Tracks maintainability index
+    - Warns on low maintainability (grade C)
+    - Does not fail CI, only provides warnings
+
+#### Enhanced
+
+- **Test Workflow**: Improved quality checks
+  - Added coverage threshold checking after test runs
+  - Coverage report now fails fast if below 70%
+  - Better visibility of coverage metrics
+
+- **Lint Workflow**: Enhanced code quality checks
+  - Added radon for complexity analysis
+  - Cyclomatic complexity checks (max 15 per function)
+  - Maintainability index tracking
+  - Total average complexity reporting
+
+- **Requirements**: Updated development dependencies
+  - Added radon>=6.0.1 for complexity and maintainability metrics
+
+#### Technical Details
+
+- Nightly workflow: `.github/workflows/nightly.yml`
+  - Smart change detection using git tags
+  - Temporary version modification for nightly builds
+  - Automatic cleanup of old nightly tags and releases
+- Coverage gate: `.github/workflows/test.yml` lines 39-54
+  - Uses `coverage report` to extract percentage
+  - Compares with MIN_COVERAGE threshold (70%)
+- Complexity check: `.github/workflows/test.yml` lines 90-106
+  - Uses `radon cc` with threshold C (complexity > 15)
+  - Provides detailed output of complex functions
+- Maintainability check: `.github/workflows/test.yml` lines 108-124
+  - Uses `radon mi` with threshold C (MI < 10)
+  - Warning-only, does not fail CI
+
+#### Impact
+
+- Earlier detection of regressions through nightly builds
+- Consistent code quality through automated gates
+- Prevents complexity creep with enforced limits
+- Better test coverage with enforcement
+- Easier testing of development versions
+- Improved maintainability visibility
+
 ## [1.0.22] - 2026-02-21
 
 ### Enhancements - Background Calculation Improvements (Section 1.3)

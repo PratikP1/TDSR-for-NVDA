@@ -8,6 +8,7 @@ pytest-mock>=3.11.1
 # Code quality
 flake8>=6.0.0
 pylint>=2.17.0
+radon>=6.0.1  # Section 2.2: Complexity and maintainability metrics
 
 # Build tools
 scons>=4.5.0
