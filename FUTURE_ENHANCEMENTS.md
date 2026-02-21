@@ -1,15 +1,15 @@
 # TDSR for NVDA - Future Enhancements Analysis
 
-**Document Version:** 2.0
-**Current Version:** 1.0.25
+**Document Version:** 3.0
+**Current Version:** 1.0.26+
 **Analysis Date:** 2026-02-21
-**Status:** Updated after completing Sections 1-4 implementation
+**Status:** Updated after completing Sections 1-5.1, 9.1 implementation
 
 ---
 
 ## Executive Summary
 
-This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.25. This analysis compares the current implementation against:
+This document analyzes all specification and requirement documents to identify features that have NOT yet been implemented in TDSR for NVDA v1.0.26+. This analysis compares the current implementation against:
 
 - SPEAKUP_SPECS_REQUIREMENTS.md - Speakup-inspired feature specifications
 - REMAINING_WORK.md - Comprehensive remaining work analysis
@@ -18,7 +18,7 @@ This document analyzes all specification and requirement documents to identify f
 
 ### Implementation Status Overview
 
-**Current Completion: ~95%** of planned features
+**Current Completion: ~96%** of planned features
 
 #### Completed Features ✅
 - Phase 1: Quick Wins (100%)
@@ -48,13 +48,20 @@ This document analyzes all specification and requirement documents to identify f
 - **Section 4: Advanced Unicode Features** (100%)
   - RTL text support (Arabic, Hebrew) ✅ (v1.0.25)
   - Emoji sequence handling ✅ (v1.0.25)
+- **Section 5.1: Third-Party Terminal Support** (100%)
+  - 13 additional terminal emulators ✅ (v1.0.26)
+  - 18 total terminals supported ✅
+- **Section 9.1: Documentation** (100%)
+  - Advanced User Guide ✅ (v1.0.26+)
+  - FAQ document ✅ (v1.0.26+)
+  - GitHub issue templates ✅ (v1.0.26+)
 
 #### Remaining Features 🔄 (All LOW Priority)
-- Additional platform support (third-party terminals, WSL)
-- Advanced window monitoring (multiple simultaneous monitors)
-- Translation/internationalization
-- Community-requested features
-- Documentation enhancements
+- Section 5.2: WSL testing and support
+- Section 6: Advanced window monitoring (multiple simultaneous monitors)
+- Section 7: Translation/internationalization
+- Section 8: Community feature requests (command history, bookmarks, search)
+- Section 9.2-9.4: Video tutorials, community forums
 
 ---
 
@@ -615,15 +622,21 @@ class EmojiHelper:
 
 ---
 
-## 5. Platform and Compatibility Enhancements (Priority: LOW)
+## 5. Platform and Compatibility Enhancements (Priority: LOW) - ✅ Section 5.1 COMPLETED v1.0.26
 
 ### 5.1 Additional Terminal Emulator Support
 
-**Status:** ⏳ PARTIALLY IMPLEMENTED
-**Current:** Windows Terminal, PowerShell, cmd.exe, conhost (v1.0.0+)
-**Missing:** Third-party terminals
+**Status:** ✅ IMPLEMENTED (v1.0.26)
+**Current:** 18 terminals supported (5 built-in + 13 third-party)
 **Estimated Effort:** 2-4 weeks (ongoing)
 **Priority:** LOW
+
+**Implementation Note:** Added detection and default profiles for 13 third-party terminals in v1.0.26:
+- Cmder, ConEmu (32/64-bit), mintty (Git Bash), PuTTY, KiTTY, Terminus, Hyper, Alacritty, WezTerm (+ GUI variant), Tabby, FluentTerminal
+- Enhanced isTerminalApp() with separate built-in and third-party terminal lists (lines 2456-2506)
+- Added default profiles in ProfileManager._initializeDefaultProfiles() (lines 1391-1455)
+- Created comprehensive tests in tests/test_third_party_terminals.py (34 test cases)
+- Documented in ADVANCED_USER_GUIDE.md and FAQ.md
 
 **What's Missing:**
 
@@ -940,15 +953,46 @@ class BookmarkManager:
 
 ---
 
-## 9. Documentation Gaps (Priority: MEDIUM)
+## 9. Documentation Gaps (Priority: MEDIUM) - ✅ Section 9.1 COMPLETED v1.0.26+
 
 ### 9.1 Missing Documentation
 
-**Status:** ⏳ PARTIALLY COMPLETE
-**Current:** Basic user guide and README exist
-**Missing:** Comprehensive documentation
+**Status:** ✅ IMPLEMENTED (v1.0.26+)
+**Current:** Comprehensive documentation suite created
 **Estimated Effort:** 2-3 weeks
 **Priority:** MEDIUM
+
+**Implementation Note:** Created comprehensive documentation in v1.0.26+:
+
+1. **Advanced User Guide** (ADVANCED_USER_GUIDE.md - 496 lines)
+   - Application profiles usage and management
+   - Third-party terminal emulator guide (18 terminals)
+   - Window definitions tutorial with examples
+   - Unicode/CJK handling guide
+   - RTL text support (Arabic, Hebrew)
+   - Emoji sequence support
+   - Performance optimization tips
+   - Advanced troubleshooting scenarios
+
+2. **FAQ Document** (FAQ.md - 387 lines)
+   - General questions and getting started
+   - Installation and setup
+   - Terminal compatibility (all 18 terminals)
+   - Features and usage workflows
+   - Troubleshooting common issues
+   - Advanced topics and customization
+
+3. **GitHub Issue Templates** (.github/ISSUE_TEMPLATE/)
+   - Bug report template with environment details
+   - Feature request template with use case analysis
+   - Terminal support request template with detection instructions
+
+4. **Updated README.md**
+   - Third-party terminal list with descriptions
+   - Documentation section with links to all guides
+   - Clear navigation to resources
+
+**Total Documentation**: 883+ new lines covering all v1.0.21-v1.0.26 features
 
 **What's Missing:**
 
