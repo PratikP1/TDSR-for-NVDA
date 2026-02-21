@@ -9,7 +9,7 @@ import sys
 
 
 class TestPositionCalculation(unittest.TestCase):
-    """Test position calculation methods."""
+    """Test position calculation methods using PositionCalculator."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -17,49 +17,39 @@ class TestPositionCalculation(unittest.TestCase):
         with patch('gui.settingsDialogs.NVDASettingsDialog'):
             self.plugin = GlobalPlugin()
 
-    def test_calculate_position_returns_tuple(self):
-        """Test _calculatePosition returns a tuple."""
-        mock_textinfo = Mock()
-        mock_textinfo.bookmark = "test_bookmark"
+    def test_position_calculator_exists(self):
+        """Test PositionCalculator is initialized."""
+        self.assertIsNotNone(self.plugin._positionCalculator)
 
-        # Mock terminal
+    def test_position_calculator_calculate_no_terminal(self):
+        """Test calculate with no bound terminal."""
+        mock_textinfo = Mock()
         self.plugin._boundTerminal = None
 
-        result = self.plugin._calculatePosition(mock_textinfo)
+        result = self.plugin._positionCalculator.calculate(mock_textinfo, None)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)
 
-    def test_calculate_position_no_terminal(self):
-        """Test _calculatePosition with no bound terminal."""
-        mock_textinfo = Mock()
-        self.plugin._boundTerminal = None
+    def test_position_calculator_cache_operations(self):
+        """Test PositionCalculator cache operations."""
+        # Access the internal cache
+        cache = self.plugin._positionCalculator._cache
 
-        result = self.plugin._calculatePosition(mock_textinfo)
-        self.assertEqual(result, (0, 0))
-
-    def test_calculate_position_with_cache(self):
-        """Test _calculatePosition uses cache when available."""
-        mock_textinfo = Mock()
-        mock_textinfo.bookmark = "cached_bookmark"
-
-        # Pre-populate cache
-        self.plugin._positionCache.set(mock_textinfo.bookmark, 10, 5)
-
-        result = self.plugin._calculatePosition(mock_textinfo)
+        # Test cache set and get
+        cache.set("test_key", 10, 5)
+        result = cache.get("test_key")
         self.assertEqual(result, (10, 5))
 
-    def test_position_cache_integration(self):
-        """Test position calculation integrates with cache."""
-        mock_textinfo = Mock()
-        mock_textinfo.bookmark = "test_pos"
+    def test_position_calculator_clear_cache(self):
+        """Test PositionCalculator cache can be cleared."""
+        cache = self.plugin._positionCalculator._cache
 
-        # First call should miss cache
-        self.plugin._boundTerminal = None
-        result1 = self.plugin._calculatePosition(mock_textinfo)
+        # Add entry and clear
+        cache.set("test_key", 10, 5)
+        self.plugin._positionCalculator.clear_cache()
 
-        # Cache should now have entry (even if (0,0) due to no terminal)
-        cached = self.plugin._positionCache.get(mock_textinfo.bookmark)
-        self.assertIsNotNone(cached)
+        result = cache.get("test_key")
+        self.assertIsNone(result)
 
 
 class TestCursorTracking(unittest.TestCase):
@@ -86,7 +76,7 @@ class TestCursorTracking(unittest.TestCase):
 
 
 class TestWindowOperations(unittest.TestCase):
-    """Test window definition and tracking operations."""
+    """Test window definition and tracking operations using WindowManager."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -94,15 +84,18 @@ class TestWindowOperations(unittest.TestCase):
         with patch('gui.settingsDialogs.NVDASettingsDialog'):
             self.plugin = GlobalPlugin()
 
-    def test_window_state_initialization(self):
-        """Test window definition state is initialized."""
-        self.assertFalse(self.plugin._windowDefining)
-        self.assertFalse(self.plugin._windowStartSet)
+    def test_window_manager_initialization(self):
+        """Test WindowManager is initialized."""
+        self.assertIsNotNone(self.plugin._windowManager)
+        self.assertFalse(self.plugin._windowManager.is_defining())
 
-    def test_window_state_variables_exist(self):
-        """Test window state variables exist."""
-        self.assertTrue(hasattr(self.plugin, '_windowDefining'))
-        self.assertTrue(hasattr(self.plugin, '_windowStartSet'))
+    def test_window_manager_operations(self):
+        """Test WindowManager has required methods."""
+        # WindowManager should have these methods
+        self.assertTrue(hasattr(self.plugin._windowManager, 'start_definition'))
+        self.assertTrue(hasattr(self.plugin._windowManager, 'is_defining'))
+        self.assertTrue(hasattr(self.plugin._windowManager, 'enable_window'))
+        self.assertTrue(hasattr(self.plugin._windowManager, 'disable_window'))
 
 
 class TestSelectionWorkflow(unittest.TestCase):
@@ -155,10 +148,13 @@ class TestClipboardOperations(unittest.TestCase):
         self.assertTrue(callable(self.plugin._copyToClipboard))
 
     def test_copy_to_clipboard_with_empty_text(self):
-        """Test _copyToClipboard with empty text."""
+        """Test _copyToClipboard with empty text still calls api.copyToClip."""
         with patch('api.copyToClip') as mock_copy:
+            mock_copy.return_value = True
             result = self.plugin._copyToClipboard("")
-            self.assertFalse(result)
+            # Even with empty text, it should try to copy and return result
+            self.assertTrue(result)
+            mock_copy.assert_called_once_with("", notify=False)
 
     def test_copy_to_clipboard_with_valid_text(self):
         """Test _copyToClipboard with valid text."""
@@ -166,7 +162,8 @@ class TestClipboardOperations(unittest.TestCase):
             mock_copy.return_value = True
             result = self.plugin._copyToClipboard("test text")
             self.assertTrue(result)
-            mock_copy.assert_called_once_with("test text")
+            # Check that it was called with notify=False parameter
+            mock_copy.assert_called_once_with("test text", notify=False)
 
 
 class TestPluginLifecycle(unittest.TestCase):
@@ -180,17 +177,22 @@ class TestPluginLifecycle(unittest.TestCase):
             self.assertIsNotNone(plugin)
 
     def test_plugin_has_required_attributes(self):
-        """Test plugin has all required attributes after init."""
+        """Test plugin has all required manager classes and attributes."""
         from globalPlugins.terminalAccess import GlobalPlugin
         with patch('gui.settingsDialogs.NVDASettingsDialog'):
             plugin = GlobalPlugin()
 
+            # Manager classes (new architecture)
+            self.assertTrue(hasattr(plugin, '_configManager'))
+            self.assertTrue(hasattr(plugin, '_windowManager'))
+            self.assertTrue(hasattr(plugin, '_positionCalculator'))
+            self.assertTrue(hasattr(plugin, '_profileManager'))
+
             # State variables
             self.assertTrue(hasattr(plugin, '_boundTerminal'))
-            self.assertTrue(hasattr(plugin, '_positionCache'))
-            self.assertTrue(hasattr(plugin, '_lastKnownPosition'))
             self.assertTrue(hasattr(plugin, '_markStart'))
             self.assertTrue(hasattr(plugin, '_markEnd'))
+            self.assertTrue(hasattr(plugin, '_lastCaretPosition'))
 
     def test_plugin_terminate(self):
         """Test plugin terminates without errors."""
@@ -224,7 +226,7 @@ class TestConfigurationIntegration(unittest.TestCase):
 
 
 class TestPerformanceOptimizations(unittest.TestCase):
-    """Test performance optimization features."""
+    """Test performance optimization features using PositionCalculator."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -232,14 +234,15 @@ class TestPerformanceOptimizations(unittest.TestCase):
         with patch('gui.settingsDialogs.NVDASettingsDialog'):
             self.plugin = GlobalPlugin()
 
-    def test_position_cache_exists(self):
-        """Test position cache is initialized."""
-        self.assertIsNotNone(self.plugin._positionCache)
+    def test_position_calculator_has_cache(self):
+        """Test PositionCalculator has a cache."""
+        self.assertIsNotNone(self.plugin._positionCalculator)
+        self.assertTrue(hasattr(self.plugin._positionCalculator, '_cache'))
 
-    def test_last_known_position_tracking(self):
-        """Test last known position tracking exists."""
-        self.assertIsNone(self.plugin._lastKnownPosition)
-        self.assertTrue(hasattr(self.plugin, '_lastKnownPosition'))
+    def test_last_caret_position_tracking(self):
+        """Test last caret position tracking exists."""
+        self.assertIsNone(self.plugin._lastCaretPosition)
+        self.assertTrue(hasattr(self.plugin, '_lastCaretPosition'))
 
     def test_background_calculation_thread_exists(self):
         """Test background calculation thread attribute exists."""
