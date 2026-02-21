@@ -3466,7 +3466,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not obj or not obj.appModule:
 			return False
 
-		appName = obj.appModule.appName.lower()
+		try:
+			appName = obj.appModule.appName.lower()
+		except (AttributeError, TypeError):
+			return False
+
+		# Ensure appName is a string
+		if not isinstance(appName, str):
+			return False
 
 		# Built-in Windows terminal applications (v1.0.0+)
 		builtinTerminals = [
@@ -3585,7 +3592,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		nextHandler()
 
 		if self.isTerminalApp(obj):
-			appName = obj.appModule.appName
+			try:
+				appName = obj.appModule.appName
+			except (AttributeError, TypeError):
+				return
 
 			# Store the terminal object and route the review cursor to it via the navigator
 			self._boundTerminal = obj
