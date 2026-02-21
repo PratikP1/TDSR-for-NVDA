@@ -59,11 +59,29 @@ TDSR for NVDA enables screen reader users to efficiently navigate and interact w
 
 ## Supported Terminals
 
+**Built-in Windows Terminals (5):**
 - Windows Terminal
 - Windows PowerShell
 - PowerShell Core (pwsh)
 - Command Prompt (cmd.exe)
 - Console Host (conhost.exe)
+
+**Third-Party Terminal Emulators (v1.0.26 - 13 terminals):**
+- Cmder - Portable console emulator
+- ConEmu - Console emulator with tabs (32-bit and 64-bit)
+- mintty - Git Bash and Cygwin terminal
+- PuTTY - SSH and telnet client
+- KiTTY - PuTTY fork with enhancements
+- Terminus - Modern, highly configurable terminal
+- Hyper - Electron-based terminal
+- Alacritty - GPU-accelerated terminal
+- WezTerm - GPU-accelerated with multiplexing
+- Tabby - Modern terminal with SSH support
+- FluentTerminal - UWP-based terminal
+
+**Total: 18 supported terminal applications**
+
+For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](ADVANCED_USER_GUIDE.md#third-party-terminal-support).
 
 ## System Requirements
 
@@ -371,6 +389,40 @@ TDSR-for-NVDA/
 ├── buildVars.py             # Build configuration
 └── README.md                # This file
 ```
+
+## Documentation
+
+TDSR provides comprehensive documentation for users and developers:
+
+### User Documentation
+- **[README.md](README.md)** (this file) - Quick start and feature overview
+- **[ADVANCED_USER_GUIDE.md](ADVANCED_USER_GUIDE.md)** - In-depth guide covering:
+  - Application profiles and customization
+  - Third-party terminal emulator guide
+  - Window definitions and screen regions
+  - Unicode, CJK, RTL text, and emoji support
+  - Performance optimization tips
+  - Advanced troubleshooting scenarios
+- **[FAQ.md](FAQ.md)** - Frequently asked questions covering:
+  - General questions and getting started
+  - Terminal compatibility
+  - Feature usage and workflows
+  - Troubleshooting common issues
+  - Advanced topics
+
+### Developer Documentation
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and architecture (550+ lines)
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation (900+ lines)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup and contribution guidelines
+
+### Change History
+- **[CHANGELOG.md](CHANGELOG.md)** - Detailed version history with all changes from v1.0.0 to current
+
+### GitHub Resources
+- **Issue Templates** - Structured templates for:
+  - Bug reports
+  - Feature requests
+  - Terminal support requests
 
 ## Contributing
 
