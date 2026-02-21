@@ -45,3 +45,9 @@ desktop.ini
 *.pyo
 sconsSign.dblite
 .sconsign.dblite
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
