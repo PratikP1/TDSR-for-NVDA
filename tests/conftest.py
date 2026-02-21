@@ -1,5 +1,5 @@
 """
-pytest configuration and fixtures for TDSR tests.
+pytest configuration and fixtures for Terminal Access tests.
 """
 import sys
 import os
@@ -30,7 +30,7 @@ sys.modules['logHandler'] = MagicMock()
 # Set up mock config
 config_mock = sys.modules['config']
 config_mock.conf = {
-    "TDSR": {
+    "terminalAccess": {
         "cursorTracking": True,
         "cursorTrackingMode": 1,
         "keyEcho": True,
@@ -78,7 +78,7 @@ def mock_textinfo():
 def reset_config():
     """Reset config to defaults before each test."""
     config_mock = sys.modules['config']
-    config_mock.conf["TDSR"] = {
+    config_mock.conf["terminalAccess"] = {
         "cursorTracking": True,
         "cursorTrackingMode": 1,
         "keyEcho": True,

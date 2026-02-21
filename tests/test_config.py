@@ -44,7 +44,7 @@ class TestConfigurationSanitization(unittest.TestCase):
 
             # Should not raise any errors
             config_mock = sys.modules['config']
-            conf = config_mock.conf["TDSR"]
+            conf = config_mock.conf["terminalAccess"]
 
             # Values should remain unchanged
             self.assertEqual(conf["cursorTrackingMode"], 1)
@@ -54,7 +54,7 @@ class TestConfigurationSanitization(unittest.TestCase):
     def test_sanitize_config_invalid_tracking_mode(self):
         """Test _sanitizeConfig with invalid cursor tracking mode."""
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
         config_dict["cursorTrackingMode"] = 99  # Invalid
 
         from globalPlugins.tdsr import GlobalPlugin
@@ -68,7 +68,7 @@ class TestConfigurationSanitization(unittest.TestCase):
     def test_sanitize_config_invalid_punctuation_level(self):
         """Test _sanitizeConfig with invalid punctuation level."""
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
         config_dict["punctuationLevel"] = -1  # Invalid
 
         from globalPlugins.tdsr import GlobalPlugin
@@ -82,7 +82,7 @@ class TestConfigurationSanitization(unittest.TestCase):
     def test_sanitize_config_invalid_cursor_delay(self):
         """Test _sanitizeConfig with invalid cursor delay."""
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
         config_dict["cursorDelay"] = 5000  # Too high
 
         from globalPlugins.tdsr import GlobalPlugin
@@ -96,7 +96,7 @@ class TestConfigurationSanitization(unittest.TestCase):
     def test_sanitize_config_long_repeated_symbols(self):
         """Test _sanitizeConfig with too long repeated symbols string."""
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
         config_dict["repeatedSymbolsValues"] = "a" * 100  # Too long
 
         from globalPlugins.tdsr import GlobalPlugin
@@ -110,7 +110,7 @@ class TestConfigurationSanitization(unittest.TestCase):
     def test_sanitize_config_invalid_window_bounds(self):
         """Test _sanitizeConfig with invalid window bounds."""
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
         config_dict["windowTop"] = -10  # Negative
         config_dict["windowBottom"] = 20000  # Too high
 

@@ -1,4 +1,4 @@
-# TDSR for NVDA - Advanced User Guide
+# Terminal Access for NVDA - Advanced User Guide
 
 ## Table of Contents
 
@@ -13,11 +13,11 @@
 
 ## Application Profiles
 
-Application profiles allow TDSR to automatically adjust its settings based on the terminal application you're using. Each profile can customize punctuation levels, cursor tracking modes, and define window regions for specialized behavior.
+Application profiles allow Terminal Access to automatically adjust its settings based on the terminal application you're using. Each profile can customize punctuation levels, cursor tracking modes, and define window regions for specialized behavior.
 
 ### Understanding Profiles
 
-TDSR comes with default profiles for popular applications:
+Terminal Access comes with default profiles for popular applications:
 
 #### Built-in Application Profiles (v1.0.18+)
 
@@ -56,7 +56,7 @@ TDSR comes with default profiles for popular applications:
 #### Viewing Installed Profiles
 
 1. Open NVDA Settings (NVDA+N → Preferences → Settings)
-2. Navigate to "TDSR" category
+2. Navigate to "Terminal Access" category
 3. Go to "Application Profiles" section
 4. The "Installed profiles" dropdown shows all available profiles
 
@@ -66,7 +66,7 @@ Profiles are sorted with default profiles first, then custom profiles alphabetic
 
 To share a profile or create a backup:
 
-1. Open TDSR Settings
+1. Open Terminal Access Settings
 2. Navigate to "Application Profiles" section
 3. Select the profile you want to export from the dropdown
 4. Click "Export..." button
@@ -79,7 +79,7 @@ The profile will be saved as a JSON file containing all settings and window defi
 
 To import a shared profile:
 
-1. Open TDSR Settings
+1. Open Terminal Access Settings
 2. Navigate to "Application Profiles" section
 3. Click "Import..." button
 4. Browse to the profile JSON file
@@ -89,7 +89,7 @@ The profile will be added to your installed profiles list. If a profile with the
 
 #### Deleting a Custom Profile
 
-1. Open TDSR Settings
+1. Open Terminal Access Settings
 2. Navigate to "Application Profiles" section
 3. Select the custom profile from the dropdown
 4. Click "Delete Profile" button
@@ -135,7 +135,7 @@ Example profile JSON structure:
 
 ## Third-Party Terminal Support
 
-**New in v1.0.26**: TDSR now supports 13 popular third-party terminal emulators in addition to the 5 built-in Windows terminals.
+**New in v1.0.26**: Terminal Access now supports 13 popular third-party terminal emulators in addition to the 5 built-in Windows terminals.
 
 ### Supported Terminals
 
@@ -200,7 +200,7 @@ Example profile JSON structure:
 
 ### Using Third-Party Terminals
 
-TDSR automatically detects third-party terminals when you switch to them. Each terminal has a default profile optimized for common usage patterns:
+Terminal Access automatically detects third-party terminals when you switch to them. Each terminal has a default profile optimized for common usage patterns:
 
 - **General terminals** (Cmder, ConEmu, Terminus, Hyper, Tabby, FluentTerminal):
   - Punctuation: SOME (balanced)
@@ -223,12 +223,12 @@ TDSR automatically detects third-party terminals when you switch to them. Each t
 You can customize settings for any terminal:
 
 1. Use the terminal you want to customize
-2. Open NVDA Settings → TDSR
+2. Open NVDA Settings → Terminal Access
 3. Adjust settings as desired
 4. Export the profile for backup or sharing
 5. Create custom window definitions if needed
 
-All TDSR features work with third-party terminals:
+All Terminal Access features work with third-party terminals:
 - Navigation commands (line, word, character)
 - Selection (linear and rectangular)
 - Cursor tracking modes

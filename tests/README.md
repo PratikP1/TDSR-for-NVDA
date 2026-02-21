@@ -1,10 +1,10 @@
-# TDSR Test Suite
+# Terminal Access Test Suite
 
-Automated tests for the TDSR for NVDA add-on.
+Automated tests for the Terminal Access for NVDA add-on.
 
 ## Overview
 
-This directory contains comprehensive unit tests for TDSR functionality. The test suite covers:
+This directory contains comprehensive unit tests for Terminal Access functionality. The test suite covers:
 
 - Input validation and security hardening (v1.0.16)
 - Position caching system (v1.0.15)

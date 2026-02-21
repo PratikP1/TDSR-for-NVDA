@@ -1,5 +1,5 @@
 """
-Tests for TDSR profile management UI components.
+Tests for Terminal Access profile management UI components.
 
 Tests cover profile list, import/export, delete operations, and UI integration.
 """
@@ -48,7 +48,7 @@ class TestProfileManagementUI(unittest.TestCase):
 
 		# Set up config with spec
 		mock_conf_obj = MagicMock()
-		mock_conf_obj.__getitem__ = lambda self, key: {"TDSR": {}}[key]
+		mock_conf_obj.__getitem__ = lambda self, key: {"terminalAccess": {}}[key]
 		mock_conf_obj.spec = {}
 		self.mock_config.conf = mock_conf_obj
 
@@ -184,7 +184,7 @@ class TestProfileManagerIntegration(unittest.TestCase):
 
 		# Set up config
 		mock_conf_obj = MagicMock()
-		mock_conf_obj.__getitem__ = lambda self, key: {"TDSR": {}}[key]
+		mock_conf_obj.__getitem__ = lambda self, key: {"terminalAccess": {}}[key]
 		mock_conf_obj.spec = {}
 		self.mock_config.conf = mock_conf_obj
 

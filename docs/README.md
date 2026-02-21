@@ -1,14 +1,14 @@
-# TDSR Documentation
+# Terminal Access Documentation
 
-This directory contains all documentation for the TDSR for NVDA add-on, organized by audience and purpose.
+This directory contains all documentation for the Terminal Access for NVDA add-on, organized by audience and purpose.
 
 ## Directory Structure
 
 ### `user/` - User Documentation
-Documentation for end users of the TDSR add-on:
+Documentation for end users of the Terminal Access add-on:
 - **ADVANCED_USER_GUIDE.md** - Comprehensive guide to advanced features
 - **FAQ.md** - Frequently asked questions
-- **WSL_TESTING_GUIDE.md** - Guide for using TDSR with Windows Subsystem for Linux
+- **WSL_TESTING_GUIDE.md** - Guide for using Terminal Access with Windows Subsystem for Linux
 - **TRANSLATION_GUIDE.md** - Guide for contributing translations (v1.0.32+)
 
 ### `developer/` - Developer Documentation
@@ -34,7 +34,7 @@ Development artifacts from earlier project phases:
 
 #### `archive/research/`
 Research and analysis documents:
-- **SPEAKUP_FEATURE_ANALYSIS.md** - Analysis of Speakup features
+- **SPEAKUP_FEATURE_ANALYSIS.md** - Analysis of Speakup features (original inspiration from TDSR project)
 - **SPEAKUP_SPECS_REQUIREMENTS.md** - Consolidated specification document
 - **API_RESEARCH_COORDINATE_TRACKING.md** - Technical research on coordinate tracking and rectangular selection
 

@@ -1,5 +1,5 @@
 """
-Tests for TDSR settings panel UI functionality.
+Tests for Terminal Access settings panel UI functionality.
 
 Tests cover settings panel loading, saving, validation, and reset functionality.
 """
@@ -48,7 +48,7 @@ class TestSettingsPanel(unittest.TestCase):
 		# Set up default config
 		mock_conf_obj = MagicMock()
 		mock_conf_obj.__getitem__ = lambda self, key: {
-			"TDSR": {
+			"terminalAccess": {
 				"cursorTracking": True,
 				"cursorTrackingMode": 1,
 				"keyEcho": True,
@@ -85,28 +85,28 @@ class TestSettingsPanel(unittest.TestCase):
 	def test_settings_panel_structure(self):
 		"""Test settings panel has correct structure."""
 		# Import after mocking
-		from addon.globalPlugins.tdsr import TDSRSettingsPanel
+		from addon.globalPlugins.tdsr import TerminalAccessSettingsPanel
 
 		# Verify class exists and has required attributes
-		self.assertTrue(hasattr(TDSRSettingsPanel, 'title'))
-		self.assertTrue(hasattr(TDSRSettingsPanel, 'makeSettings'))
-		self.assertTrue(hasattr(TDSRSettingsPanel, 'onSave'))
-		self.assertTrue(hasattr(TDSRSettingsPanel, 'onResetToDefaults'))
+		self.assertTrue(hasattr(TerminalAccessSettingsPanel, 'title'))
+		self.assertTrue(hasattr(TerminalAccessSettingsPanel, 'makeSettings'))
+		self.assertTrue(hasattr(TerminalAccessSettingsPanel, 'onSave'))
+		self.assertTrue(hasattr(TerminalAccessSettingsPanel, 'onResetToDefaults'))
 
 	def test_verbose_mode_in_config(self):
 		"""Test verbose mode setting is in configuration."""
 		# Verify verboseMode is in config spec
-		self.assertIn("verboseMode", self.mock_config.conf["TDSR"])
-		self.assertIsInstance(self.mock_config.conf["TDSR"]["verboseMode"], bool)
+		self.assertIn("verboseMode", self.mock_config.conf["terminalAccess"])
+		self.assertIsInstance(self.mock_config.conf["terminalAccess"]["verboseMode"], bool)
 
 	def test_quiet_mode_in_config(self):
 		"""Test quiet mode setting is in configuration."""
-		self.assertIn("quietMode", self.mock_config.conf["TDSR"])
-		self.assertIsInstance(self.mock_config.conf["TDSR"]["quietMode"], bool)
+		self.assertIn("quietMode", self.mock_config.conf["terminalAccess"])
+		self.assertIsInstance(self.mock_config.conf["terminalAccess"]["quietMode"], bool)
 
 	def test_default_values(self):
 		"""Test all settings have appropriate default values."""
-		defaults = self.mock_config.conf["TDSR"]
+		defaults = self.mock_config.conf["terminalAccess"]
 
 		# Boolean settings
 		self.assertEqual(defaults["cursorTracking"], True)
@@ -125,7 +125,7 @@ class TestSettingsPanel(unittest.TestCase):
 
 	def test_window_coordinate_settings(self):
 		"""Test window coordinate settings exist."""
-		defaults = self.mock_config.conf["TDSR"]
+		defaults = self.mock_config.conf["terminalAccess"]
 
 		self.assertIn("windowTop", defaults)
 		self.assertIn("windowBottom", defaults)
@@ -180,7 +180,7 @@ class TestConfigManager(unittest.TestCase):
 		# Set up default config
 		mock_conf_obj = MagicMock()
 		mock_conf_obj.__getitem__ = lambda self, key: {
-			"TDSR": {
+			"terminalAccess": {
 				"cursorTrackingMode": 1,
 				"punctuationLevel": 2,
 				"cursorDelay": 20,
@@ -272,7 +272,7 @@ class TestUIIntegration(unittest.TestCase):
 
 		# Set up config
 		mock_conf_obj = MagicMock()
-		mock_conf_obj.__getitem__ = lambda self, key: {"TDSR": {}}[key]
+		mock_conf_obj.__getitem__ = lambda self, key: {"terminalAccess": {}}[key]
 		mock_conf_obj.spec = {}
 		self.mock_config.conf = mock_conf_obj
 

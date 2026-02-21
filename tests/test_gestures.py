@@ -1,5 +1,5 @@
 """
-Tests for TDSR keyboard gesture handling.
+Tests for Terminal Access keyboard gesture handling.
 
 Tests cover gesture registration, conflict detection, and help descriptions.
 """
@@ -179,7 +179,7 @@ class TestGestureExecution(unittest.TestCase):
 		sys.modules['config'] = self.mock_config
 
 		# Set up config
-		self.mock_config.conf = {"TDSR": {}}
+		self.mock_config.conf = {"terminalAccess": {}}
 
 	def tearDown(self):
 		"""Clean up after tests."""

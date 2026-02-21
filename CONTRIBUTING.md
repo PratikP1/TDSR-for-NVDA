@@ -280,7 +280,7 @@ When adding features:
 
 ### Key Components
 
-TDSR is organized into several key components (see `ARCHITECTURE.md` for details):
+Terminal Access is organized into several key components (see `ARCHITECTURE.md` for details):
 
 1. **PositionCache**: Performance optimization for position calculations
 2. **ANSIParser**: Color and formatting detection
@@ -342,12 +342,12 @@ try:
 except (RuntimeError, AttributeError) as e:
     # Specific exceptions
     import logHandler
-    logHandler.log.error(f"TDSR: Operation failed - {type(e).__name__}: {e}")
+    logHandler.log.error(f"Terminal Access: Operation failed - {type(e).__name__}: {e}")
     ui.message(_("Specific error message"))
 except Exception as e:
     # Generic fallback
     import logHandler
-    logHandler.log.error(f"TDSR: Unexpected error - {type(e).__name__}: {e}")
+    logHandler.log.error(f"Terminal Access: Unexpected error - {type(e).__name__}: {e}")
     ui.message(_("Generic error message"))
 ```
 

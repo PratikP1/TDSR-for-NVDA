@@ -1,5 +1,5 @@
 """
-Performance regression tests for TDSR.
+Performance regression tests for Terminal Access.
 
 These tests ensure that performance-critical operations stay within acceptable limits.
 """

@@ -1,5 +1,5 @@
 """
-Performance and regression tests for TDSR.
+Performance and regression tests for Terminal Access.
 
 Tests for performance benchmarks and known bug prevention.
 """
@@ -155,7 +155,7 @@ class TestRegressionPrevention(unittest.TestCase):
         from globalPlugins.tdsr import GlobalPlugin
 
         config_mock = sys.modules['config']
-        config_dict = config_mock.conf["TDSR"]
+        config_dict = config_mock.conf["terminalAccess"]
 
         # Set invalid values
         config_dict["cursorTrackingMode"] = 999

@@ -1,5 +1,5 @@
 """
-Integration tests for core TDSR workflows.
+Integration tests for core Terminal Access workflows.
 
 Tests complete user workflows and feature interactions.
 """
@@ -214,7 +214,7 @@ class TestConfigurationIntegration(unittest.TestCase):
         """Test _sanitizeConfig is called during init."""
         # Plugin should have sanitized config
         config_mock = sys.modules['config']
-        conf = config_mock.conf["TDSR"]
+        conf = config_mock.conf["terminalAccess"]
 
         # Should have valid values
         self.assertGreaterEqual(conf["cursorTrackingMode"], 0)

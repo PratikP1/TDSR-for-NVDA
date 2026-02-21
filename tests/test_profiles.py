@@ -1,5 +1,5 @@
 """
-Tests for TDSR application profile system.
+Tests for Terminal Access application profile system.
 
 Tests cover profile detection, activation, and window definition handling.
 """
@@ -63,7 +63,7 @@ class TestProfileActivation(unittest.TestCase):
 		sys.modules['config'] = self.mock_config
 
 		# Set up default config
-		self.mock_config.conf = {"TDSR": {}}
+		self.mock_config.conf = {"terminalAccess": {}}
 
 	def tearDown(self):
 		"""Clean up after tests."""
@@ -140,7 +140,7 @@ class TestWindowManager(unittest.TestCase):
 		# Mock config
 		self.mock_config = MagicMock()
 		self.mock_config.conf = {
-			"TDSR": {
+			"terminalAccess": {
 				"windowEnabled": False,
 				"windowTop": 0,
 				"windowBottom": 0,
