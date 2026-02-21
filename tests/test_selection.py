@@ -114,6 +114,8 @@ class TestTerminalDetection(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
+        # Ensure gui module is available (conftest should have mocked it)
+        import gui
         from globalPlugins.terminalAccess import GlobalPlugin
         with patch('gui.settingsDialogs.NVDASettingsDialog'):
             self.plugin = GlobalPlugin()

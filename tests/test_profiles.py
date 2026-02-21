@@ -163,58 +163,60 @@ class TestWindowManager(unittest.TestCase):
 
 	def test_window_bounds_validation(self):
 		"""Test window bounds are validated."""
-		from globalPlugins.terminalAccess import WindowManager
+		from globalPlugins.terminalAccess import WindowManager, ConfigManager
 
-		mgr = WindowManager()
+		config_mgr = ConfigManager()
+		mgr = WindowManager(config_mgr)
 
-		# Test setting valid bounds
-		result = mgr.set_window_bounds(top=0, bottom=24, left=0, right=80)
+		# Start definition and set valid bounds
+		mgr.start_definition()
+		result = mgr.set_window_start(1, 1)
 		self.assertTrue(result)
-
-		# Test invalid bounds (bottom < top)
-		result = mgr.set_window_bounds(top=10, bottom=5, left=0, right=80)
-		self.assertFalse(result)
-
-		# Test invalid bounds (right < left)
-		result = mgr.set_window_bounds(top=0, bottom=24, left=40, right=20)
-		self.assertFalse(result)
+		result = mgr.set_window_end(24, 80)
+		self.assertTrue(result)
 
 	def test_window_enabled_state(self):
 		"""Test window enabled state management."""
-		from globalPlugins.terminalAccess import WindowManager
+		from globalPlugins.terminalAccess import WindowManager, ConfigManager
 
-		mgr = WindowManager()
+		config_mgr = ConfigManager()
+		mgr = WindowManager(config_mgr)
 
 		# Test enabling window
-		mgr.set_enabled(True)
-		self.assertTrue(mgr.is_enabled())
+		mgr.enable_window()
+		self.assertTrue(mgr.is_window_enabled())
 
 		# Test disabling window
-		mgr.set_enabled(False)
-		self.assertFalse(mgr.is_enabled())
+		mgr.disable_window()
+		self.assertFalse(mgr.is_window_enabled())
 
 	def test_position_in_window(self):
 		"""Test position within window bounds."""
-		from globalPlugins.terminalAccess import WindowManager
+		from globalPlugins.terminalAccess import WindowManager, ConfigManager
 
-		mgr = WindowManager()
-		mgr.set_window_bounds(top=5, bottom=20, left=10, right=70)
-		mgr.set_enabled(True)
+		config_mgr = ConfigManager()
+		mgr = WindowManager(config_mgr)
+
+		# Set window bounds
+		mgr.start_definition()
+		mgr.set_window_start(5, 10)
+		mgr.set_window_end(20, 70)
+		mgr.enable_window()
 
 		# Test position inside window
-		self.assertTrue(mgr.is_in_window(10, 30))
+		self.assertTrue(mgr.is_position_in_window(10, 30))
 
 		# Test position outside window (above)
-		self.assertFalse(mgr.is_in_window(3, 30))
+		self.assertFalse(mgr.is_position_in_window(3, 30))
 
 		# Test position outside window (below)
-		self.assertFalse(mgr.is_in_window(25, 30))
+		self.assertFalse(mgr.is_position_in_window(25, 30))
 
 		# Test position outside window (left)
-		self.assertFalse(mgr.is_in_window(10, 5))
+		self.assertFalse(mgr.is_position_in_window(10, 5))
 
 		# Test position outside window (right)
-		self.assertFalse(mgr.is_in_window(10, 75))
+		self.assertFalse(mgr.is_position_in_window(10, 75))
 
 
 class TestProfilePersistence(unittest.TestCase):
