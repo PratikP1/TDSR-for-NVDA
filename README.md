@@ -1,6 +1,6 @@
 # Terminal Access for NVDA
 
-An NVDA add-on that provides enhanced terminal accessibility for Windows Terminal and PowerShell. Inspired by [TDSR (Terminal Data Structure Reader)](https://github.com/tspivey/tdsr) and incorporates functionality from both TDSR and [Speakup](https://github.com/linux-speakup/speakup). Advanced features inspired by community suggestions and discussions.
+An NVDA add-on that provides enhanced terminal accessibility for various Windows Terminals like PowerShell, WSL2, and others. Inspired by [TDSR (Terminal Data Structure Reader)](https://github.com/tspivey/tdsr), this add-on incorporates functionality from both TDSR and [Speakup](https://github.com/linux-speakup/speakup). Advanced features inspired by community suggestions and discussions.
 
 ## Overview
 
@@ -65,8 +65,9 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - PowerShell Core (pwsh)
 - Command Prompt (cmd.exe)
 - Console Host (conhost.exe)
+- +WSL1 and WSL2
 
-**Third-Party Terminal Emulators (v1.0.26 - 13 terminals):**
+**Third-Party Terminal Emulators - 13 terminals):**
 - Cmder - Portable console emulator
 - ConEmu - Console emulator with tabs (32-bit and 64-bit)
 - mintty - Git Bash and Cygwin terminal
@@ -79,7 +80,7 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - Tabby - Modern terminal with SSH support
 - FluentTerminal - UWP-based terminal
 
-**Total: 18 supported terminal applications**
+**Total: 19 supported terminal applications**
 
 For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md#third-party-terminal-support).
 
@@ -473,7 +474,7 @@ Community contributions and discussions from various accessibility forums and so
 
 ## License
 
-Copyright (C) 2024 Terminal Access Contributors
+Copyright (C) 2024 Pratik Patel
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
