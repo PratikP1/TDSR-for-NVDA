@@ -11,6 +11,16 @@ This directory contains comprehensive unit tests for TDSR functionality. The tes
 - Configuration management
 - Selection operations
 - Terminal detection
+- Integration workflows
+- Performance benchmarks
+- Regression prevention
+
+## Python Version Compatibility
+
+Tests are designed to run on Python 3.7-3.11, matching NVDA 2019.3+ support:
+- **Minimum**: Python 3.7 (NVDA 2019.3)
+- **Maximum**: Python 3.11 (current NVDA)
+- **CI/CD**: Tests run on all versions automatically
 
 ## Quick Start
 
@@ -28,10 +38,12 @@ pytest tests/
 ## Test Files
 
 - `conftest.py` - pytest configuration and fixtures
-- `test_validation.py` - Input validation and resource limits
-- `test_cache.py` - PositionCache functionality
-- `test_config.py` - Configuration management
-- `test_selection.py` - Selection operations and terminal detection
+- `test_validation.py` - Input validation and resource limits (40+ tests)
+- `test_cache.py` - PositionCache functionality (15+ tests)
+- `test_config.py` - Configuration management (20+ tests)
+- `test_selection.py` - Selection operations and terminal detection (25+ tests)
+- `test_integration.py` - Integration tests for workflows (30+ tests)
+- `test_performance.py` - Performance benchmarks and regression tests (20+ tests)
 
 ## Coverage
 
@@ -41,6 +53,7 @@ Current coverage targets:
 - Cache: 95% ✅
 - Config: 85% ✅
 - Selection: 80% ✅
+- Integration: 75% ✅
 
 ## CI/CD
 

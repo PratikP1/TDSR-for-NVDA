@@ -2,6 +2,15 @@
 
 This document describes how to run the automated test suite for TDSR.
 
+## Python Version Requirements
+
+**TDSR is compatible with NVDA 2019.3 and later**, which corresponds to:
+- **Minimum Python Version**: 3.7 (NVDA 2019.3)
+- **Maximum Python Version**: 3.11 (latest tested)
+- **Tested Versions**: 3.7, 3.8, 3.9, 3.10, 3.11
+
+The test suite runs on all these Python versions via CI/CD to ensure compatibility.
+
 ## Quick Start
 
 ```bash
@@ -20,10 +29,12 @@ pytest tests/
 The TDSR test suite includes:
 
 ### Unit Tests
-- **test_validation.py**: Input validation and resource limit tests
-- **test_cache.py**: PositionCache functionality and thread safety
-- **test_config.py**: Configuration management and sanitization
-- **test_selection.py**: Selection operations and terminal detection
+- **test_validation.py**: Input validation and resource limit tests (40+ tests)
+- **test_cache.py**: PositionCache functionality and thread safety (15+ tests)
+- **test_config.py**: Configuration management and sanitization (20+ tests)
+- **test_selection.py**: Selection operations and terminal detection (25+ tests)
+- **test_integration.py**: Integration tests for core workflows (30+ tests)
+- **test_performance.py**: Performance benchmarks and regression tests (20+ tests)
 
 ### Coverage Goal
 - **Overall Target**: 70%+ code coverage

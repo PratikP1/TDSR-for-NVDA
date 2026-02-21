@@ -13,6 +13,9 @@ jobs:
 
     strategy:
       matrix:
+        # Python versions aligned with NVDA compatibility:
+        # - 3.7: Minimum (NVDA 2019.3)
+        # - 3.11: Maximum tested (current NVDA versions)
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
