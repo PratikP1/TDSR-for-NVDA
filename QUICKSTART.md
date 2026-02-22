@@ -46,6 +46,7 @@ Position on any text and try:
 ### Step 5: Try Advanced Features
 - **NVDA+Alt+A** - Continuous reading (say all) from cursor to end
 - **NVDA+Alt+I** (twice) - Announce line indentation
+- **NVDA+Alt+5** - Toggle automatic indentation announcement on line read
 - **NVDA+Alt+P** - Announce current position (row and column)
 
 ### Step 6: Control Punctuation Levels
@@ -59,6 +60,7 @@ Position on any text and try:
 |---------|--------|
 | **NVDA+Shift+F1** | Open full user guide |
 | **NVDA+Alt+Q** | Toggle quiet mode |
+| **NVDA+Alt+5** | Toggle automatic indentation announcement |
 | **NVDA+Alt+Shift+S** | Open settings |
 | **NVDA+Alt+I** | Read current line |
 | **NVDA+Alt+I** (twice) | Announce line indentation |
@@ -81,6 +83,7 @@ Try these settings:
 - **Key Echo**: Hear characters as you type
 - **Cursor Tracking**: Announce cursor movements
 - **Punctuation Level**: Control symbol verbosity (None/Some/Most/All)
+- **Announce Indentation When Reading Lines**: Automatically announce indentation for code
 
 ## Common Tasks
 
@@ -118,10 +121,12 @@ Try these settings:
 4. Use **NVDA+Alt+PageUp/PageDown** to jump to top or bottom
 
 ### Working with Python or YAML Code
-1. Navigate to a line of code
-2. Press **NVDA+Alt+I** twice to hear indentation level
-3. Use line navigation to review code structure
-4. Indentation feedback helps understand nesting
+1. Enable automatic indentation announcement with **NVDA+Alt+5**
+2. Navigate to a line of code with **NVDA+Alt+U/I/O**
+3. Indentation level is announced automatically after the line content
+4. Or press **NVDA+Alt+I** twice to query indentation of current line
+5. Use line navigation to review code structure
+6. Toggle off with **NVDA+Alt+5** when not needed
 
 ### Debugging Character Issues
 1. Navigate to a suspicious character
@@ -153,6 +158,7 @@ Try these settings:
 ### Advanced Reading
 - **NVDA+Alt+A** - Continuous reading (say all)
 - **NVDA+Alt+I** (twice) - Announce indentation level
+- **NVDA+Alt+5** - Toggle automatic indentation announcement
 - **NVDA+Alt+Comma** (twice) - Read character phonetically
 - **NVDA+Alt+Comma** (three times) - Announce character code
 - **NVDA+Alt+K** (twice) - Spell current word
