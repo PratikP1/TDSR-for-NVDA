@@ -139,6 +139,8 @@ confspec = {
 	"cursorDelay": "integer(default=20, min=0, max=1000)",
 	"quietMode": "boolean(default=False)",
 	"verboseMode": "boolean(default=False)",  # Phase 6: Verbose feedback with context
+	"announceIndentation": "boolean(default=False)",  # Announce indentation when reading lines
+	"indentationOnLineRead": "boolean(default=False)",  # Automatically announce indentation on line navigation
 	"windowTop": "integer(default=0, min=0)",
 	"windowBottom": "integer(default=0, min=0)",
 	"windowLeft": "integer(default=0, min=0)",
@@ -1216,6 +1218,8 @@ class ApplicationProfile:
 		self.repeatedSymbolsValues: Optional[str] = None
 		self.cursorDelay: Optional[int] = None
 		self.quietMode: Optional[bool] = None
+		self.announceIndentation: Optional[bool] = None
+		self.indentationOnLineRead: Optional[bool] = None
 
 		# Window definitions (list of WindowDefinition objects)
 		self.windows: List[WindowDefinition] = []
@@ -1251,6 +1255,8 @@ class ApplicationProfile:
 			'repeatedSymbolsValues': self.repeatedSymbolsValues,
 			'cursorDelay': self.cursorDelay,
 			'quietMode': self.quietMode,
+			'announceIndentation': self.announceIndentation,
+			'indentationOnLineRead': self.indentationOnLineRead,
 			'windows': [w.toDict() for w in self.windows],
 			'customGestures': self.customGestures,
 		}
@@ -1268,6 +1274,8 @@ class ApplicationProfile:
 		profile.repeatedSymbolsValues = data.get('repeatedSymbolsValues')
 		profile.cursorDelay = data.get('cursorDelay')
 		profile.quietMode = data.get('quietMode')
+		profile.announceIndentation = data.get('announceIndentation')
+		profile.indentationOnLineRead = data.get('indentationOnLineRead')
 
 		# Restore windows
 		for winData in data.get('windows', []):
@@ -1793,6 +1801,7 @@ class ConfigManager:
 		config.conf["terminalAccess"]["cursorDelay"] = 20
 		config.conf["terminalAccess"]["quietMode"] = False
 		config.conf["terminalAccess"]["verboseMode"] = False
+		config.conf["terminalAccess"]["indentationOnLineRead"] = False
 		config.conf["terminalAccess"]["windowTop"] = 0
 		config.conf["terminalAccess"]["windowBottom"] = 0
 		config.conf["terminalAccess"]["windowLeft"] = 0
@@ -3975,8 +3984,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_previousLine(gesture)
+		# Read line with optional indentation
+		self._readLineWithIndentation(gesture, globalCommands.commands.script_review_previousLine)
 
 	@script(
 		# Translators: Description for reading the current line
@@ -3993,8 +4002,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if scriptHandler.getLastScriptRepeatCount() == 1:
 			self._announceIndentation()
 		else:
-			# Use NVDA's built-in review cursor functionality
-			globalCommands.commands.script_review_currentLine(gesture)
+			# Read line with optional indentation
+			self._readLineWithIndentation(gesture, globalCommands.commands.script_review_currentLine)
 
 	@script(
 		# Translators: Description for reading the next line
@@ -4006,8 +4015,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self.isTerminalApp():
 			gesture.send()
 			return
-		# Use NVDA's built-in review cursor functionality
-		globalCommands.commands.script_review_nextLine(gesture)
+		# Read line with optional indentation
+		self._readLineWithIndentation(gesture, globalCommands.commands.script_review_nextLine)
 	
 	@script(
 		# Translators: Description for reading the previous word
@@ -4130,7 +4139,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			# Translators: Message when quiet mode is disabled
 			ui.message(_("Quiet mode off"))
-	
+
+	@script(
+		# Translators: Description for toggling indentation announcement
+		description=_("Toggle indentation announcement on line read in terminal"),
+		gesture="kb:NVDA+alt+5"
+	)
+	def script_toggleIndentation(self, gesture):
+		"""Toggle indentation announcement on/off."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		currentState = config.conf["terminalAccess"]["indentationOnLineRead"]
+		config.conf["terminalAccess"]["indentationOnLineRead"] = not currentState
+
+		if config.conf["terminalAccess"]["indentationOnLineRead"]:
+			# Translators: Message when indentation announcement is enabled
+			ui.message(_("Indentation announcement on"))
+		else:
+			# Translators: Message when indentation announcement is disabled
+			ui.message(_("Indentation announcement off"))
+
 	@script(
 		# Translators: Description for copy mode
 		description=_("Enter copy mode in terminal"),
@@ -4716,6 +4746,97 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				ui.message(_("{count} space").format(count=spaces) if spaces == 1 else _("{count} spaces").format(count=spaces))
 		except Exception:
 			ui.message(_("Unable to read indentation"))
+
+	def _getIndentationInfo(self, lineText: str) -> tuple:
+		"""
+		Get indentation information from a line of text.
+
+		Args:
+			lineText: The line text to analyze
+
+		Returns:
+			Tuple of (spaces, tabs) counts
+		"""
+		if not lineText:
+			return (0, 0)
+
+		# Remove trailing newline if present
+		if lineText.endswith('\n') or lineText.endswith('\r'):
+			lineText = lineText.rstrip('\n\r')
+
+		if not lineText:
+			return (0, 0)
+
+		# Count leading spaces and tabs
+		spaces = 0
+		tabs = 0
+		for char in lineText:
+			if char == ' ':
+				spaces += 1
+			elif char == '\t':
+				tabs += 1
+			else:
+				break
+
+		return (spaces, tabs)
+
+	def _formatIndentation(self, spaces: int, tabs: int) -> str:
+		"""
+		Format indentation info as a string.
+
+		Args:
+			spaces: Number of leading spaces
+			tabs: Number of leading tabs
+
+		Returns:
+			Formatted string describing the indentation
+		"""
+		if spaces == 0 and tabs == 0:
+			return ""
+		elif tabs > 0 and spaces > 0:
+			# Translators: Message for mixed indentation
+			return _("{tabs} tab, {spaces} spaces").format(tabs=tabs, spaces=spaces) if tabs == 1 else _("{tabs} tabs, {spaces} spaces").format(tabs=tabs, spaces=spaces)
+		elif tabs > 0:
+			# Translators: Message for tab indentation
+			return _("{count} tab").format(count=tabs) if tabs == 1 else _("{count} tabs").format(count=tabs)
+		else:
+			# Translators: Message for space indentation
+			return _("{count} space").format(count=spaces) if spaces == 1 else _("{count} spaces").format(count=spaces)
+
+	def _readLineWithIndentation(self, gesture, moveFunction):
+		"""
+		Read a line and optionally announce indentation.
+
+		Args:
+			gesture: The gesture that triggered this command
+			moveFunction: The function to call to read the line (e.g., script_review_currentLine)
+		"""
+		# Check if indentation should be announced
+		shouldAnnounceIndentation = config.conf["terminalAccess"]["indentationOnLineRead"]
+
+		# Get line text before reading it aloud
+		if shouldAnnounceIndentation:
+			try:
+				reviewPos = self._getReviewPosition()
+				if reviewPos:
+					info = reviewPos.copy()
+					info.expand(textInfos.UNIT_LINE)
+					lineText = info.text
+					spaces, tabs = self._getIndentationInfo(lineText)
+					indentInfo = self._formatIndentation(spaces, tabs)
+				else:
+					indentInfo = ""
+			except Exception:
+				indentInfo = ""
+		else:
+			indentInfo = ""
+
+		# Read the line using NVDA's built-in functionality
+		moveFunction(gesture)
+
+		# Announce indentation after line is read, if enabled
+		if indentInfo:
+			ui.message(indentInfo)
 
 	def _announceCharacterCode(self):
 		"""Announce the ASCII/Unicode code of the current character."""
@@ -5817,6 +5938,18 @@ class TerminalAccessSettingsPanel(SettingsPanel):
 			"Useful for debugging and understanding terminal layout."
 		))
 
+		# Indentation announcement checkbox
+		# Translators: Label for indentation announcement checkbox
+		self.indentationOnLineReadCheckBox = feedbackGroup.addItem(
+			wx.CheckBox(self, label=_("Announce &indentation when reading lines"))
+		)
+		self.indentationOnLineReadCheckBox.SetValue(config.conf["terminalAccess"]["indentationOnLineRead"])
+		# Translators: Tooltip for indentation announcement
+		self.indentationOnLineReadCheckBox.SetToolTip(_(
+			"Automatically announce indentation level when reading lines. "
+			"Use NVDA+Alt+5 to toggle quickly. NVDA+Alt+I pressed twice still reads indentation."
+		))
+
 		# === Advanced Settings Section ===
 		# Translators: Label for advanced settings group
 		advancedGroup = guiHelper.BoxSizerHelper(self, sizer=wx.StaticBoxSizer(
@@ -5963,6 +6096,7 @@ class TerminalAccessSettingsPanel(SettingsPanel):
 			config.conf["terminalAccess"]["cursorDelay"] = 20
 			config.conf["terminalAccess"]["quietMode"] = False
 			config.conf["terminalAccess"]["verboseMode"] = False  # Phase 6: Verbose Mode
+			config.conf["terminalAccess"]["indentationOnLineRead"] = False
 
 			# Update UI to reflect defaults
 			self.cursorTrackingCheckBox.SetValue(True)
@@ -5975,6 +6109,7 @@ class TerminalAccessSettingsPanel(SettingsPanel):
 			self.cursorDelaySpinner.SetValue(20)
 			self.quietModeCheckBox.SetValue(False)
 			self.verboseModeCheckBox.SetValue(False)  # Phase 6: Verbose Mode
+			self.indentationOnLineReadCheckBox.SetValue(False)
 
 			# Translators: Message after resetting to defaults
 			gui.messageBox(
@@ -5998,6 +6133,7 @@ class TerminalAccessSettingsPanel(SettingsPanel):
 		config.conf["terminalAccess"]["repeatedSymbols"] = self.repeatedSymbolsCheckBox.GetValue()
 		config.conf["terminalAccess"]["quietMode"] = self.quietModeCheckBox.GetValue()
 		config.conf["terminalAccess"]["verboseMode"] = self.verboseModeCheckBox.GetValue()  # Phase 6: Verbose Mode
+		config.conf["terminalAccess"]["indentationOnLineRead"] = self.indentationOnLineReadCheckBox.GetValue()
 
 		# Validate and save punctuation level
 		punctLevel = self.punctuationLevelChoice.GetSelection()
