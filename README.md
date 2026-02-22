@@ -109,6 +109,7 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 ### Navigation
 - **NVDA+Alt+U/I/O** - Read previous/current/next line
 - **NVDA+Alt+I** (twice) - Announce line indentation level
+- **NVDA+Alt+5** - Toggle automatic indentation announcement on line read
 - **NVDA+Alt+J/K/L** - Read previous/current/next word
 - **NVDA+Alt+M/Comma/Period** - Read previous/current/next character
 - **NVDA+Alt+Comma** (twice) - Read character phonetically
@@ -173,6 +174,7 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 ### Special Features
 - **NVDA+Alt+K** (twice) - Spell current word
 - **NVDA+Alt+Q** - Toggle quiet mode
+- **NVDA+Alt+5** - Toggle automatic indentation announcement
 
 ### Help
 - **NVDA+Shift+F1** - Open user guide
@@ -197,6 +199,8 @@ Access Terminal Access settings through:
 
 **Line Pause** - Reserved for future continuous reading functionality. Currently preserved but not actively used.
 
+**Announce Indentation When Reading Lines** - When enabled, automatically announces the indentation level (spaces and/or tabs) after reading each line with NVDA+Alt+U, I, or O. Essential for Python, YAML, and other indentation-sensitive code. Use NVDA+Alt+5 to toggle quickly, or NVDA+Alt+I twice to query indentation of current line. Can be customized per application profile.
+
 **Punctuation Level** - Controls how many symbols are announced (0-3):
 - **Level 0 (None)**: No punctuation announced
 - **Level 1 (Some)**: Basic punctuation (.,?!;:)
@@ -213,6 +217,7 @@ Access Terminal Access settings through:
 ### Settings Interactions
 
 - **Quiet Mode** (NVDA+Alt+Q) temporarily disables cursor tracking and key echo
+- **Indentation Announcement** (NVDA+Alt+5) toggles indentation reading on line navigation
 - **Process Symbols** affects cursor tracking, key echo, and character navigation
 - **Condense Repeated Symbols** requires Key Echo to be enabled
 - **Cursor Delay** only affects cursor tracking, not key echo or manual navigation
