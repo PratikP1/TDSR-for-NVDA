@@ -4,6 +4,37 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.37] - 2026-02-22
+
+### Added
+
+- **Indentation Reading Feature**: Automatic announcement of indentation when reading lines
+  - New setting: "Announce indentation when reading lines" (default: disabled)
+  - **NVDA+Alt+5**: Quick toggle for indentation announcement (announces "Indentation announcement on/off")
+  - Works with all line reading commands: NVDA+Alt+U (previous line), NVDA+Alt+I (current line), NVDA+Alt+O (next line)
+  - Announces indentation after line content (e.g., "4 spaces", "2 tabs", "1 tab, 3 spaces")
+  - Per-application profile support: customize indentation settings for specific apps (Python, YAML editors, etc.)
+  - Helper methods: `_getIndentationInfo()`, `_formatIndentation()`, `_readLineWithIndentation()`
+  - Preserves existing behavior: NVDA+Alt+I pressed twice still queries indentation of current line only
+  - UI integration: new checkbox in Terminal Access Settings with descriptive tooltip
+  - Essential for Python, YAML, Makefiles, and other indentation-sensitive code
+
+### Fixed
+
+- **Keyboard Commands**: Fixed NVDA+Alt+Comma and NVDA+Alt+Period commands typing characters
+  - Commands now pass `None` to globalCommands review functions instead of gesture object
+  - Prevents comma and period keys from being typed when reading current/next character
+  - Affected commands: NVDA+Alt+Comma (read current character), NVDA+Alt+Period (read next character)
+  - Applied pattern for all gestures containing typeable characters
+
+### Documentation
+
+- Updated README.md with indentation reading feature and NVDA+Alt+5 toggle
+- Updated QUICKSTART.md with indentation usage examples for Python/YAML code
+- Updated addon/doc/en/readme.html with complete keyboard commands and practical scenarios
+- Added indentation to Settings Interactions section
+- Updated Scenario 7 (Python Code Navigation) with automatic indentation workflow
+
 ## [1.0.36] - 2026-02-21
 
 ### Fixed
