@@ -255,6 +255,84 @@ class PositionCache:
 				del self._cache[key]
 
 
+class TextDiffer:
+	"""
+	Lightweight text differ for detecting new terminal output.
+
+	Stores a snapshot of the last-known terminal text and compares it
+	against the current text to identify newly appended content.
+
+	The common case—output being appended to the end—is handled in O(n)
+	time, where n is the length of the new suffix.  For edits in the
+	middle or full screen clears the differ reports a ``"changed"`` state
+	without computing a detailed diff.
+
+	This class is opt-in; callers must call :meth:`update` explicitly.
+	No UIA/COM calls are made here.
+
+	Example usage:
+		>>> differ = TextDiffer()
+		>>> differ.update("line1\\nline2\\n")
+		('initial', '')
+		>>> differ.update("line1\\nline2\\nline3\\n")
+		('appended', 'line3\\n')
+		>>> differ.update("completely different")
+		('changed', '')
+
+	Thread Safety:
+		Not internally thread-safe; callers must synchronise if needed.
+	"""
+
+	# Possible diff result kinds
+	KIND_INITIAL = "initial"    # First snapshot — no previous state
+	KIND_UNCHANGED = "unchanged"  # Text identical to last snapshot
+	KIND_APPENDED = "appended"  # New text was appended after old text
+	KIND_CHANGED = "changed"    # Non-trivial change (edit, clear, etc.)
+
+	def __init__(self) -> None:
+		"""Initialise with no previous snapshot."""
+		self._last_text: Optional[str] = None
+
+	def update(self, current_text: str) -> Tuple[str, str]:
+		"""
+		Compare *current_text* to the stored snapshot and return a diff result.
+
+		Args:
+			current_text: The full current terminal text.
+
+		Returns:
+			tuple: ``(kind, new_content)`` where *kind* is one of the
+			``KIND_*`` constants and *new_content* is the appended portion
+			(only non-empty for :attr:`KIND_APPENDED`).
+		"""
+		if self._last_text is None:
+			self._last_text = current_text
+			return (self.KIND_INITIAL, "")
+
+		if current_text == self._last_text:
+			return (self.KIND_UNCHANGED, "")
+
+		# Fast append detection: old text is a strict prefix of new text.
+		old = self._last_text
+		if current_text.startswith(old):
+			appended = current_text[len(old):]
+			self._last_text = current_text
+			return (self.KIND_APPENDED, appended)
+
+		# Non-trivial change.
+		self._last_text = current_text
+		return (self.KIND_CHANGED, "")
+
+	def reset(self) -> None:
+		"""Discard the stored snapshot so the next :meth:`update` is treated as initial."""
+		self._last_text = None
+
+	@property
+	def last_text(self) -> Optional[str]:
+		"""The last snapshot text, or ``None`` if no snapshot has been taken."""
+		return self._last_text
+
+
 class ANSIParser:
 	"""
 	Robust ANSI escape sequence parser for terminal color and formatting attributes.
@@ -3256,32 +3334,49 @@ class OutputSearchManager:
 			if not all_text:
 				return 0
 
-			# Split into lines
+			# Split into lines and build a set of matching line numbers first
+			# (0-indexed internally, converted to 1-indexed for storage).
 			lines = all_text.split('\n')
 
-			# Search each line
 			if use_regex:
 				import re
 				flags = 0 if case_sensitive else re.IGNORECASE
 				regex = re.compile(pattern, flags)
-
-				for line_num, line_text in enumerate(lines, 1):
-					if regex.search(line_text):
-						# Create bookmark for this line
-						line_info = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
-						line_info.move(textInfos.UNIT_LINE, line_num - 1)
-						_store_match(line_info, line_text, line_num)
+				matching_indices = [i for i, line in enumerate(lines) if regex.search(line)]
 			else:
-				# Simple text search
 				search_pattern = pattern if case_sensitive else pattern.lower()
+				matching_indices = [
+					i for i, line in enumerate(lines)
+					if search_pattern in (line if case_sensitive else line.lower())
+				]
 
-				for line_num, line_text in enumerate(lines, 1):
-					search_text = line_text if case_sensitive else line_text.lower()
-					if search_pattern in search_text:
-						# Create bookmark for this line
+			if not matching_indices:
+				return 0
+
+			# Single forward pass from POSITION_FIRST: walk line by line,
+			# collecting bookmarks only for matching lines.
+			# This replaces the previous per-match O(line_num) walk with a
+			# single O(total_lines) walk for the entire search.
+			try:
+				cursor = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
+				match_set = set(matching_indices)
+				for line_index in range(len(lines) - 1 if lines[-1] == '' else len(lines)):
+					if line_index in match_set:
+						_store_match(cursor, lines[line_index], line_index + 1)
+					if line_index < len(lines) - 1:
+						moved = cursor.move(textInfos.UNIT_LINE, 1)
+						if not moved:
+							break
+			except Exception:
+				# Fall back to per-match walk if single-pass fails.
+				self._matches = []
+				for i in matching_indices:
+					try:
 						line_info = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
-						line_info.move(textInfos.UNIT_LINE, line_num - 1)
-						_store_match(line_info, line_text, line_num)
+						line_info.move(textInfos.UNIT_LINE, i)
+						_store_match(line_info, lines[i], i + 1)
+					except Exception:
+						pass
 
 			return len(self._matches)
 
@@ -3812,6 +3907,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastTypedChar = None
 		self._repeatedCharCount = 0
 
+		# Content generation counter — incremented whenever terminal content changes.
+		# Used to invalidate per-line TextInfo caches in _announceStandardCursor.
+		self._contentGeneration: int = 0
+
+		# Line-level TextInfo cache for _announceStandardCursor.
+		# Stores the text of the last line visited so that moving within the
+		# same line (and with no intervening content change) avoids extra COM
+		# calls.
+		self._lastLineText: Optional[str] = None
+		self._lastLineStartOffset: Optional[int] = None
+		self._lastLineEndOffset: Optional[int] = None
+		self._lastLineGeneration: int = -1
+
 		# Highlight tracking state
 		self._lastHighlightedText = None
 		self._lastHighlightPosition = None
@@ -4180,6 +4288,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Clear position cache on content change
 		self._positionCalculator.clear_cache()
 
+		# Increment content generation so cached line TextInfo is invalidated.
+		self._contentGeneration += 1
+
 		# Process the character for speech
 		if ch:
 			# Check if we should condense repeated symbols
@@ -4302,6 +4413,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		Standard cursor tracking - announce character at cursor position.
 
+		Uses a line-level cache to avoid redundant UIA/COM calls when the
+		caret moves within the same line and no content change has occurred
+		since the last announcement.
+
 		Args:
 			obj: The terminal object.
 		"""
@@ -4315,9 +4430,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		self._lastCaretPosition = currentPos
 
-		# Expand to get the character at cursor
-		info.expand(textInfos.UNIT_CHARACTER)
-		char = info.text
+		# Try to retrieve the character from the line cache.
+		# The cache is valid when:
+		#   (a) content generation hasn't changed (no typing/text changes), and
+		#   (b) the new caret offset falls within the cached line's range.
+		char = None
+		cache_valid = (
+			self._lastLineText is not None
+			and self._lastLineGeneration == self._contentGeneration
+			and currentPos is not None
+			and self._lastLineStartOffset is not None
+			and self._lastLineEndOffset is not None
+			and self._lastLineStartOffset <= currentPos < self._lastLineEndOffset
+		)
+
+		if cache_valid:
+			# Compute character index within the cached line text.
+			char_index = currentPos - self._lastLineStartOffset
+			if 0 <= char_index < len(self._lastLineText):
+				char = self._lastLineText[char_index]
+
+		if char is None:
+			# Cache miss or out-of-range: expand to character and also refresh
+			# the line cache for future caret events on the same line.
+			info.expand(textInfos.UNIT_CHARACTER)
+			char = info.text
+
+			# Refresh line cache: expand a fresh copy to the full line.
+			try:
+				line_info = obj.makeTextInfo(textInfos.POSITION_CARET)
+				line_info.expand(textInfos.UNIT_LINE)
+				self._lastLineText = line_info.text
+				bm = getattr(line_info, 'bookmark', None)
+				try:
+					self._lastLineStartOffset = bm.startOffset
+					self._lastLineEndOffset = bm.endOffset
+				except AttributeError:
+					# Can't determine range; disable line cache.
+					self._lastLineStartOffset = None
+					self._lastLineEndOffset = None
+				self._lastLineGeneration = self._contentGeneration
+			except Exception:
+				self._lastLineText = None
+				self._lastLineStartOffset = None
+				self._lastLineEndOffset = None
 
 		if char and char.strip():
 			# Use punctuation level system if enabled
