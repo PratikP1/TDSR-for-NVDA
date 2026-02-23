@@ -79,7 +79,7 @@ class TestGestureScoping(unittest.TestCase):
 		from globalPlugins.terminalAccess import GlobalPlugin
 
 		plugin = GlobalPlugin()
-		plugin._terminalGestures = {"kb:NVDA+alt+u": "script_readPreviousLine"}
+		plugin._terminalGestures = {"kb:NVDA+alt+u": "readPreviousLine"}
 		plugin._gesturesBound = True
 
 		non_terminal = MagicMock()
@@ -93,7 +93,7 @@ class TestGestureScoping(unittest.TestCase):
 		from globalPlugins.terminalAccess import GlobalPlugin
 
 		plugin = GlobalPlugin()
-		plugin._terminalGestures = {"kb:NVDA+alt+u": "script_readPreviousLine"}
+		plugin._terminalGestures = {"kb:NVDA+alt+u": "readPreviousLine"}
 		plugin._gesturesBound = False
 
 		terminal = MagicMock()
