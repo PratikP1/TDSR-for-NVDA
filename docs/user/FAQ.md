@@ -112,7 +112,15 @@ Yes! As of v1.0.26, Terminal Access supports 13 popular third-party terminal emu
 
 ### Does Terminal Access work with WSL (Windows Subsystem for Linux)?
 
-WSL terminals should work as they run through Windows Terminal or other supported terminals. However, WSL-specific testing has not been comprehensive. If you encounter issues, please report them on GitHub.
+Yes! Terminal Access includes full support for WSL as of v1.0.27+. Features include:
+
+- **Automatic WSL detection**: Recognizes `wsl` and `bash` processes
+- **WSL-specific profile**: Optimized for Linux command-line usage with enhanced punctuation for paths and operators
+- **Full compatibility**: Works with both WSL 1 and WSL 2
+- **Distribution support**: Tested with Ubuntu, Debian, Arch, Fedora, and openSUSE
+- **Development tools**: Supports vim, git, tmux, and other Linux CLI tools
+
+For detailed setup instructions, testing procedures, and troubleshooting, see the **[WSL Testing Guide](WSL_TESTING_GUIDE.md)**.
 
 ### Can I use Terminal Access with SSH connections?
 
@@ -265,6 +273,91 @@ Without these libraries, Terminal Access provides basic Unicode support but not 
 - Use search/jump commands instead of line-by-line navigation
 - Consider reducing buffer size in terminal settings
 - Report performance issues on GitHub with buffer size details
+
+### No speech when moving cursor
+
+**Problem**: Nothing is announced when using arrow keys.
+
+**Solutions**:
+1. **Enable Cursor Tracking**: NVDA menu > Preferences > Settings > Terminal Settings > Enable "Cursor Tracking"
+2. **Check Quiet Mode**: Press NVDA+Alt+Q to toggle quiet mode off
+3. **Verify tracking mode**: Press NVDA+Alt+Asterisk to cycle through tracking modes (ensure not "Off")
+4. **Adjust Cursor Delay**: Try setting delay to 0ms if responses are too slow
+
+### Punctuation not announced
+
+**Problem**: Symbols and punctuation aren't being read.
+
+**Solutions**:
+1. **Increase punctuation level**: Press NVDA+Alt+] to increase level
+2. **Check current level**: Open Terminal Settings to see punctuation level (0-3)
+3. **Try level 3**: Set to "All" (level 3) to hear everything
+4. **Note**: Level 0 (None) doesn't announce any punctuation
+
+### Colors/formatting not announced
+
+**Problem**: NVDA+Alt+Shift+A doesn't announce colors.
+
+**Solutions**:
+1. **Verify color codes exist**: Colors may not be present in current terminal content
+2. **Check terminal support**: Ensure terminal supports ANSI color codes
+3. **Try test**: Run `echo -e "\x1b[31mRed text\x1b[0m"` to test with known colored text
+4. **Update**: Ensure you have v1.0.18 or later for full ANSI support
+
+### Selection marks not working
+
+**Problem**: Can't set or clear selection marks.
+
+**Solutions**:
+1. **Correct sequence**: Press NVDA+Alt+R three times: first sets start, second sets end, third clears
+2. **Check messages**: Listen for "Mark start set", "Mark end set", or "Marks cleared"
+3. **Copy after marks**: Only copy commands (NVDA+Alt+C or NVDA+Alt+Shift+C) after both marks set
+4. **Clear and retry**: Press NVDA+Alt+X to clear marks if confused
+
+### Window tracking silent
+
+**Problem**: Cursor announcements stop in certain screen areas.
+
+**Solutions**:
+1. **Check window mode**: You may be in Window tracking mode with defined boundaries
+2. **Verify window bounds**: Check Terminal Settings for window coordinates
+3. **Clear window**: Press NVDA+Alt+F3 to clear window definition
+4. **Switch mode**: Press NVDA+Alt+Asterisk to use Standard tracking instead
+
+### Settings not saving
+
+**Problem**: Configuration changes don't persist after restart.
+
+**Solutions**:
+1. **Save properly**: Click "OK" or "Apply" in settings dialog
+2. **Check permissions**: Ensure NVDA can write to configuration directory
+3. **NVDA profile**: If using NVDA profiles, settings are profile-specific
+4. **Reset config**: Try deleting NVDA configuration and reconfiguring
+
+### Build/Installation issues
+
+**Problem**: Can't build or install the add-on.
+
+**Solutions**:
+1. **Python version**: Ensure Python 3.7 or later is installed
+2. **Dependencies**: Run `pip install -r requirements-dev.txt` for development
+3. **Build command**: Use `python build.py` or `scons` from project root
+4. **NVDA restart**: Always restart NVDA after installing/updating add-on
+5. **Check logs**: View NVDA log (NVDA+F1) for detailed error messages
+
+### How to report issues
+
+If problems persist:
+
+1. **Check NVDA log**: NVDA menu > Tools > View log for error details
+2. **Enable debug logging**: NVDA menu > Preferences > Settings > General > Log level: Debug
+3. **Gather information**: Note your NVDA version, Windows version, terminal app, Terminal Access version
+4. **Create issue**: Report at https://github.com/PratikP1/Terminal-Access-for-NVDA/issues with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Expected vs. actual behavior
+   - Relevant log excerpts
+   - System information
 
 ---
 

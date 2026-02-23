@@ -51,6 +51,12 @@ Terminal Access comes with default profiles for popular applications:
   - Line pause: Disabled (fast reading for chat)
   - Silent zones: Status bar (bottom line)
 
+- **WSL (v1.0.27+)**: Windows Subsystem for Linux
+  - Punctuation: MOST (code-friendly for Linux commands and paths)
+  - Cursor Tracking: STANDARD mode
+  - Repeated symbols: OFF (progress bars and separators common in Linux tools)
+  - See [WSL_TESTING_GUIDE.md](WSL_TESTING_GUIDE.md) for detailed WSL support
+
 ### Managing Profiles
 
 #### Viewing Installed Profiles

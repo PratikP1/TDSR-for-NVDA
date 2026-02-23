@@ -18,7 +18,7 @@ That's it! The add-on is now installed.
 ## First Steps (5 minutes)
 
 ### Step 1: Open a Terminal
-Open Windows Terminal, PowerShell, or Command Prompt.
+Open Windows Terminal, PowerShell, Command Prompt, or WSL.
 
 You'll hear: *"Terminal Access support active. Press NVDA+shift+f1 for help."*
 
@@ -226,7 +226,7 @@ Try these settings:
 ## Troubleshooting
 
 ### Not Working?
-- Ensure you're in a supported terminal (Terminal, PowerShell, cmd)
+- Ensure you're in a supported terminal (Windows Terminal, PowerShell, cmd, WSL)
 - Check add-on is enabled in NVDA > Tools > Manage Add-ons
 - Restart NVDA
 
