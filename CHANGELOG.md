@@ -4,6 +4,8 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.38] - 2026-02-23
+
 ### Added
 
 - **Default Profile Setting**: Choose a default profile to use when no application-specific profile is detected
@@ -34,6 +36,7 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
   - NVDA+Alt+Shift+0-9 sets bookmarks 0-9 (all 10 bookmarks)
   - Profile announcement moved to NVDA+Alt+F10 to free up NVDA+Alt+0
   - Indentation toggle moved to NVDA+Alt+F5 to free up NVDA+Alt+5
+- **Author Information**: Updated author to Pratik Patel
 
 ### Fixed
 

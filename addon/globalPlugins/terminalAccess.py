@@ -1,5 +1,5 @@
 # Terminal Access for NVDA - Global Plugin
-# Copyright (C) 2024 Terminal Access Contributors
+# Copyright (C) 2024 Pratik Patel
 # This add-on is covered by the GNU General Public License, version 3.
 # See the file LICENSE for more details.
 
