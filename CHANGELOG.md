@@ -4,6 +4,19 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.40] - 2026-02-23
+
+### Release Notes
+
+This is the **first public release** of Terminal Access for NVDA. The add-on is now ready for general use by the screen reader community.
+
+### Documentation
+
+- All documentation reviewed and updated for public release
+- README.md now includes direct links to CONTRIBUTING.md and docs/README.md
+- Contributing section enhanced with clear navigation to contribution guidelines
+- Documentation structure verified for completeness and accessibility
+
 ## [1.0.38] - 2026-02-23
 
 ### Added

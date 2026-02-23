@@ -202,6 +202,10 @@ Contributions are welcome! Please feel free to:
 - Submit pull requests
 - Improve documentation
 
+For detailed contribution guidelines, development setup, coding standards, and testing procedures, please see:
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Complete contribution guide
+- **[docs/README.md](docs/README.md)** - Documentation organization and structure
+
 ## Credits
 
 Terminal Access is inspired by:
