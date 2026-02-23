@@ -93,7 +93,7 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 
 **Total: 19 supported terminal applications (including WSL)**
 
-For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md#third-party-terminal-support). For WSL-specific information, see [WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md).
+For detailed information about each terminal and third-party terminal support, see the [User Guide](#user-guide). For WSL-specific information, see [WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md).
 
 ## System Requirements
 
@@ -115,84 +115,22 @@ When you open a supported terminal application, NVDA will announce:
 
 Press **NVDA+Shift+F1** to open the comprehensive user guide.
 
-## Key Commands
+### Key Gestures
 
-### Navigation
+Terminal Access provides keyboard shortcuts for efficient terminal navigation. For the complete list of gestures and detailed usage instructions, see:
+
+- Press **NVDA+Shift+F1** while using the add-on to view the built-in guide
+- View the [User Guide](#user-guide) section below
+- Refer to `addon/doc/en/readme.html` file
+
+**Most Common Gestures:**
 - **NVDA+Alt+U/I/O** - Read previous/current/next line
-- **NVDA+Alt+I** (twice) - Announce line indentation level
-- **NVDA+Alt+F5** - Toggle automatic indentation announcement on line read
 - **NVDA+Alt+J/K/L** - Read previous/current/next word
-- **NVDA+Alt+M/Comma/Period** - Read previous/current/next character
-- **NVDA+Alt+Comma** (twice) - Read character phonetically
-- **NVDA+Alt+Comma** (three times) - Announce character code
-
-### Screen Edge Navigation
-- **NVDA+Alt+Home** - Jump to first character of line
-- **NVDA+Alt+End** - Jump to last character of line
-- **NVDA+Alt+PageUp** - Jump to top of terminal buffer
-- **NVDA+Alt+PageDown** - Jump to bottom of terminal buffer
-
-### Directional Reading
-- **NVDA+Alt+Shift+Left** - Read from cursor to beginning of line
-- **NVDA+Alt+Shift+Right** - Read from cursor to end of line
-- **NVDA+Alt+Shift+Up** - Read from cursor to top of buffer
-- **NVDA+Alt+Shift+Down** - Read from cursor to bottom of buffer
-
-### Reading & Position
-- **NVDA+Alt+A** - Continuous reading (Say All) from cursor to end
-- **NVDA+Alt+P** - Announce current row and column position
-
-### Punctuation Levels
-- **NVDA+Alt+[** - Decrease punctuation level
-- **NVDA+Alt+]** - Increase punctuation level
-- Levels: None (0) → Some (1) → Most (2) → All (3)
-
-### Cursor Tracking & Attributes
-- **NVDA+Alt+Asterisk** - Cycle cursor tracking mode (Off → Standard → Highlight → Window)
-- **NVDA+Alt+Shift+A** - Read text attributes/colors at cursor
-
-### Screen Windowing
-- **NVDA+Alt+F2** - Set screen window (press twice: start, then end)
-- **NVDA+Alt+F3** - Clear screen window
-- **NVDA+Alt+Plus** - Read window content
-
-### Selection & Copy
-- **NVDA+Alt+R** - Toggle mark (start/end/clear for enhanced selection)
-- **NVDA+Alt+C** - Copy linear selection (requires marks to be set)
-- **NVDA+Alt+Shift+C** - Copy rectangular selection (requires marks to be set)
-- **NVDA+Alt+X** - Clear selection marks
-- **NVDA+Alt+V** - Enter legacy copy mode
-
-### Bookmarks (v1.0.29+)
-- **NVDA+Alt+Shift+0-9** - Set bookmark at current position
-- **NVDA+Alt+0-9** - Jump to bookmark
-- **NVDA+Alt+Shift+B** - List all bookmarks
-
-### Tab Management (v1.0.39+)
-- **NVDA+Shift+Alt+T** - Create a new tab in the terminal
-- **NVDA+Alt+T** - List tabs or switch to next tab
-
-**Note:** Tab management works with terminals that support multiple tabs, such as Windows Terminal, PowerShell 7+, and other modern terminal applications. Bookmarks, search results, and command history are automatically isolated per tab when using tab-aware terminals.
-
-### Command History (v1.0.31+)
-- **NVDA+Alt+Shift+H** - Scan and detect command history
-- **NVDA+Alt+Up Arrow** - Navigate to previous command
-- **NVDA+Alt+Down Arrow** - Navigate to next command
-- **NVDA+Alt+Shift+L** - List command history
-
-### Search (v1.0.30+)
 - **NVDA+Alt+F** - Search terminal output
-- **NVDA+F3** - Jump to next search match
-- **NVDA+Shift+F3** - Jump to previous search match
-
-### Special Features
-- **NVDA+Alt+K** (twice) - Spell current word
+- **NVDA+Alt+[/]** - Adjust punctuation level
 - **NVDA+Alt+Q** - Toggle quiet mode
-- **NVDA+Alt+F5** - Toggle automatic indentation announcement
-- **NVDA+Alt+F10** - Announce active and default profiles
 
-### Help
-- **NVDA+Shift+F1** - Open user guide
+See the [User Guide](#user-guide) section for complete gesture documentation.
 
 ## Configuration
 
@@ -240,151 +178,176 @@ Access Terminal Access settings through:
 
 ## Troubleshooting
 
-For troubleshooting common issues, please refer to the **[FAQ.md](docs/user/FAQ.md#troubleshooting)** which provides comprehensive solutions for:
+For troubleshooting common issues, please refer to the **[FAQ.md](docs/user/FAQ.md#troubleshooting)** which provides comprehensive solutions for common problems.
 
-- Terminal Access gestures not working
-- No speech when moving cursor
-- Punctuation not being announced
-- Colors/formatting not announced
-- Selection marks issues
-- Profile activation problems
-- Window tracking behavior
-- Performance issues in large buffers
-- Settings not saving
-- Build/installation issues
-- And more...
+## User Guide
 
-For advanced troubleshooting scenarios, see the **[Advanced User Guide](docs/user/ADVANCED_USER_GUIDE.md#troubleshooting-advanced-scenarios)**.
+Terminal Access provides comprehensive documentation:
 
-## Documentation
-
-For detailed documentation, including:
-- Complete keyboard command reference
-- Configuration guide
-- Tips and best practices
-
-Press **NVDA+Shift+F1** while using the add-on, or view the `addon/doc/en/readme.html` file.
-
-## Development
-
-### Building from Source
-
-The add-on can be built using standard NVDA add-on build tools. Ensure you have:
-- Python 3.7+
-- NVDA add-on development environment
-
-To build the add-on manually:
-```bash
-python build.py
-```
-
-For automated builds (non-interactive mode):
-```bash
-python build.py --non-interactive
-```
-
-### Automated Releases
-
-This project uses GitHub Actions to automatically build and publish releases when changes are pushed to the `main` branch. The release process:
-
-1. **Automatic Triggering**: When commits are pushed to the `main` branch that affect `buildVars.py`, `manifest.ini`, `addon/`, or `build.py`, the workflow automatically triggers.
-
-2. **Version Detection**: The version number is extracted from `buildVars.py` (the `addon_version` field).
-
-3. **Build Process**: The workflow:
-   - Builds the `.nvda-addon` package
-   - Creates a source code archive
-   - Extracts changelog information from `CHANGELOG.md`
-
-4. **Release Creation**: If the version tag doesn't already exist, a GitHub release is created with:
-   - Tag name: `v{version}` (e.g., `v1.0.1`)
-   - The compiled `.nvda-addon` file
-   - Source code archive
-   - Changelog excerpt from the latest version
-
-5. **Latest Tag**: The `latest` tag is automatically updated to point to the most recent release, making it easy for users to always download the current version.
-
-**Note**: To create a new release, simply update the version number in `buildVars.py` and `manifest.ini`, update the `CHANGELOG.md`, and push to the `main` branch.
-
-### Project Structure
-
-```
-Terminal-Access-for-NVDA/
-├── addon/
-│   ├── globalPlugins/
-│   │   └── terminalAccess.py  # Main plugin code
-│   ├── locale/              # Translation files (v1.0.32+)
-│   └── doc/
-│       └── en/
-│           └── readme.html   # User guide
-├── docs/                     # Organized documentation
-│   ├── user/                # User guides and FAQs
-│   ├── developer/           # Architecture and API docs
-│   ├── testing/             # Testing procedures
-│   └── archive/             # Historical/research documents
-├── tests/                    # Automated test suite
-├── .github/                  # CI/CD and issue templates
-├── manifest.ini              # Add-on metadata
-├── buildVars.py             # Build configuration
-├── CHANGELOG.md             # Version history
-└── README.md                # This file
-```
-
-## Documentation
-
-Terminal Access provides comprehensive documentation organized by audience:
+### Getting Started
+- **Quick Reference**: See [Key Gestures](#key-gestures) above for most common commands
+- **Built-in Help**: Press **NVDA+Shift+F1** while using the add-on
+- **Installation Guide**: See [Installation](#installation) section above
 
 ### User Documentation
-- **[README.md](README.md)** (this file) - Quick start and feature overview
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
-- **[INSTALL.md](INSTALL.md)** - Installation instructions
-- **[ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md)** - In-depth guide covering:
-  - Application profiles and customization
-  - Third-party terminal emulator guide (18 terminals)
-  - Window definitions and screen regions
-  - Unicode, CJK, RTL text, and emoji support
-  - Performance optimization tips
-  - Advanced troubleshooting scenarios
 - **[FAQ.md](docs/user/FAQ.md)** - Frequently asked questions covering:
   - General questions and getting started
   - Terminal compatibility
   - Feature usage and workflows
   - Troubleshooting common issues
   - Advanced topics
-- **[WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md)** - Windows Subsystem for Linux testing guide
-- **[TRANSLATION_GUIDE.md](docs/user/TRANSLATION_GUIDE.md)** - Guide for translators (v1.0.32+)
 
-### Developer Documentation
-- **[ARCHITECTURE.md](docs/developer/ARCHITECTURE.md)** - System design and architecture (550+ lines)
-- **[API_REFERENCE.md](docs/developer/API_REFERENCE.md)** - Complete API documentation (900+ lines)
-- **[ROADMAP.md](docs/developer/ROADMAP.md)** - Project roadmap and future plans
-- **[FUTURE_ENHANCEMENTS.md](docs/developer/FUTURE_ENHANCEMENTS.md)** - Future enhancement tracking
+### Advanced Topics
+The following documentation covers advanced features and configuration:
+
+#### Application Profiles
+Application profiles automatically adjust settings for specific applications like Vim, tmux, git, and htop.
+
+**Viewing and Managing Profiles:**
+1. Open NVDA Settings (NVDA+N → Preferences → Settings)
+2. Navigate to "Terminal Access" category
+3. Go to "Application Profiles" section
+4. View, export, import, or delete profiles
+
+**Built-in Profiles:**
+- **vim/nvim**: Enhanced punctuation for code, silent status line
+- **tmux**: Silent status bar for cleaner navigation
+- **htop**: Optimized regions for header and process list
+- **less/more**: Quiet mode for document reading
+- **git**: Enhanced punctuation for diffs and logs
+- **nano**: Silent shortcut bar
+- **irssi**: Chat-optimized settings
+- **WSL**: Linux command-line optimized settings
+
+**Custom Profiles:**
+Export an existing profile, edit the JSON file to customize settings, and import it back.
+
+#### Third-Party Terminal Support
+Terminal Access supports 13 popular third-party terminal emulators including:
+- Cmder, ConEmu, mintty (Git Bash/Cygwin)
+- PuTTY, KiTTY (SSH/telnet clients)
+- Terminus, Hyper (modern Electron-based)
+- Alacritty, WezTerm (GPU-accelerated)
+- Tabby, FluentTerminal (connection management)
+
+All Terminal Access features work with third-party terminals including navigation, selection, cursor tracking, and profiles.
+
+#### Window Definitions
+Define specific screen regions with different speech behaviors:
+- **Silent zones**: Suppress status bars and repetitive UI elements
+- **Announce regions**: Normal speech for content areas
+- **Monitor regions**: Track changes in specific areas
+
+Use NVDA+Alt+F2 to set window boundaries, NVDA+Alt+F3 to clear.
+
+#### Unicode and International Text
+- **CJK Support**: Accurate double-width character handling
+- **RTL Text**: Arabic and Hebrew with bidirectional algorithm (requires `python-bidi` and `arabic-reshaper`)
+- **Emoji**: Complex emoji sequences including ZWJ, skin tones, and flags (requires `emoji` package)
+
+#### Performance Features
+- **Position Caching**: Up to 500x faster for repeated navigation (v1.0.21+)
+- **Incremental Tracking**: 10-20x faster for small cursor movements
+- **Background Processing**: Long operations with progress dialogs
+
+### Complete Keyboard Reference
+
+**Navigation:**
+- **NVDA+Alt+U/I/O** - Read previous/current/next line
+- **NVDA+Alt+I** (twice) - Announce line indentation level
+- **NVDA+Alt+F5** - Toggle automatic indentation announcement
+- **NVDA+Alt+J/K/L** - Read previous/current/next word
+- **NVDA+Alt+M/Comma/Period** - Read previous/current/next character
+- **NVDA+Alt+Comma** (twice) - Read character phonetically
+- **NVDA+Alt+Comma** (three times) - Announce character code
+
+**Screen Edge Navigation:**
+- **NVDA+Alt+Home** - Jump to first character of line
+- **NVDA+Alt+End** - Jump to last character of line
+- **NVDA+Alt+PageUp** - Jump to top of terminal buffer
+- **NVDA+Alt+PageDown** - Jump to bottom of terminal buffer
+
+**Directional Reading:**
+- **NVDA+Alt+Shift+Left** - Read from cursor to beginning of line
+- **NVDA+Alt+Shift+Right** - Read from cursor to end of line
+- **NVDA+Alt+Shift+Up** - Read from cursor to top of buffer
+- **NVDA+Alt+Shift+Down** - Read from cursor to bottom of buffer
+
+**Reading & Position:**
+- **NVDA+Alt+A** - Continuous reading (Say All) from cursor to end
+- **NVDA+Alt+P** - Announce current row and column position
+
+**Punctuation Levels:**
+- **NVDA+Alt+[** - Decrease punctuation level
+- **NVDA+Alt+]** - Increase punctuation level
+- Levels: None (0) → Some (1) → Most (2) → All (3)
+
+**Cursor Tracking & Attributes:**
+- **NVDA+Alt+Asterisk** - Cycle cursor tracking mode
+- **NVDA+Alt+Shift+A** - Read text attributes/colors at cursor
+
+**Screen Windowing:**
+- **NVDA+Alt+F2** - Set screen window (press twice: start, then end)
+- **NVDA+Alt+F3** - Clear screen window
+- **NVDA+Alt+Plus** - Read window content
+
+**Selection & Copy:**
+- **NVDA+Alt+R** - Toggle mark (start/end/clear for enhanced selection)
+- **NVDA+Alt+C** - Copy linear selection
+- **NVDA+Alt+Shift+C** - Copy rectangular selection
+- **NVDA+Alt+X** - Clear selection marks
+- **NVDA+Alt+V** - Enter legacy copy mode
+
+**Bookmarks (v1.0.29+):**
+- **NVDA+Alt+Shift+0-9** - Set bookmark at current position
+- **NVDA+Alt+0-9** - Jump to bookmark
+- **NVDA+Alt+Shift+B** - List all bookmarks
+
+**Tab Management (v1.0.39+):**
+- **NVDA+Shift+Alt+T** - Create a new tab in the terminal
+- **NVDA+Alt+T** - List tabs or switch to next tab
+
+**Command History (v1.0.31+):**
+- **NVDA+Alt+Shift+H** - Scan and detect command history
+- **NVDA+Alt+Up/Down Arrow** - Navigate commands
+- **NVDA+Alt+Shift+L** - List command history
+
+**Search (v1.0.30+):**
+- **NVDA+Alt+F** - Search terminal output
+- **NVDA+F3** - Jump to next search match
+- **NVDA+Shift+F3** - Jump to previous search match
+
+**Special Features:**
+- **NVDA+Alt+K** (twice) - Spell current word
+- **NVDA+Alt+Q** - Toggle quiet mode
+- **NVDA+Alt+F10** - Announce active and default profiles
+- **NVDA+Shift+F1** - Open user guide
+
+### Additional Documentation
+- **[WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md)** - Windows Subsystem for Linux guide
+- **[TRANSLATION_GUIDE.md](docs/user/TRANSLATION_GUIDE.md)** - Guide for translators (v1.0.32+)
+- **[CHANGELOG.md](CHANGELOG.md)** - Detailed version history
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup and contribution guidelines
 
-### Testing Documentation
-- **[TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md)** - Comprehensive testing guide covering:
-  - Automated testing with pytest
-  - Manual testing procedures
-  - CI/CD integration
-  - Test writing guidelines
+### Developer Documentation
+- **[ARCHITECTURE.md](docs/developer/ARCHITECTURE.md)** - System design and architecture
+- **[API_REFERENCE.md](docs/developer/API_REFERENCE.md)** - Complete API documentation
+- **[ROADMAP.md](docs/developer/ROADMAP.md)** - Project roadmap and future plans
+- **[TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md)** - Testing procedures
 
-### Change History
-- **[CHANGELOG.md](CHANGELOG.md)** - Detailed version history with all changes from v1.0.0 to current (v1.0.32+)
+## Releases
 
-### Release Documentation
-- **[RELEASE.md](RELEASE.md)** - Release process and procedures
+### Latest Release
 
-### GitHub Resources
-- **Issue Templates** - Structured templates for:
-  - Bug reports
-  - Feature requests
-  - Terminal support requests
+Download the latest version from the [GitHub Releases page](https://github.com/PratikP1/Terminal-Access-for-NVDA/releases/latest).
 
-### Archived Documentation
-Historical and research documentation is preserved in `docs/archive/`:
-- **Development artifacts** - Phase specifications, implementation summaries
-- **Research documents** - Feature analysis, API research
-- **Legacy documentation** - Superseded by current documentation but kept for reference
+### Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed information about all releases, including:
+- New features and enhancements
+- Bug fixes
+- Breaking changes
+- Migration guides
 
 ## Contributing
 
