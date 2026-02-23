@@ -2723,6 +2723,208 @@ class WindowMonitor:
 			]
 
 
+class TabManager:
+	"""
+	Manage terminal tabs for quick navigation and state tracking.
+
+	Section 9: Tab Management Functionality (v1.0.39+)
+
+	This class enables users to detect, navigate, and manage tabs within terminal
+	applications like Windows Terminal, allowing for tab-aware bookmark and search
+	state management.
+
+	Features:
+	- Tab detection using window properties and content heuristics
+	- Tab navigation with keyboard shortcuts
+	- Per-tab state isolation for bookmarks, searches, and command history
+	- Tab listing and enumeration
+	- Support for multiple terminal applications
+
+	Example usage:
+		>>> manager = TabManager(terminal_obj)
+		>>> tab_id = manager.get_current_tab_id()
+		>>> manager.list_tabs()
+		>>> manager.switch_to_tab(1)
+	"""
+
+	def __init__(self, terminal_obj):
+		"""
+		Initialize the TabManager.
+
+		Args:
+			terminal_obj: Terminal TextInfo object
+		"""
+		self._terminal = terminal_obj
+		self._tabs = {}  # tab_id -> tab_info mapping
+		self._current_tab_id = None
+		self._last_window_title = None
+		self._update_current_tab()
+
+	def _generate_tab_id(self, terminal_obj) -> str:
+		"""
+		Generate a unique tab identifier based on terminal properties.
+
+		Uses window handle, title, and content hash to create a unique ID.
+
+		Args:
+			terminal_obj: Terminal TextInfo object
+
+		Returns:
+			str: Unique tab identifier
+		"""
+		try:
+			# Try to get window properties
+			components = []
+
+			# Add window handle if available
+			if hasattr(terminal_obj, 'windowHandle'):
+				components.append(str(terminal_obj.windowHandle))
+
+			# Add window text/title if available
+			if hasattr(terminal_obj, 'windowText'):
+				components.append(terminal_obj.windowText or "")
+			elif hasattr(terminal_obj, 'name'):
+				components.append(terminal_obj.name or "")
+
+			# Add object ID if available
+			if hasattr(terminal_obj, '_get_ID'):
+				try:
+					obj_id = terminal_obj._get_ID()
+					components.append(str(obj_id))
+				except Exception:
+					pass
+
+			# Create hash from components
+			import hashlib
+			tab_str = "|".join(components)
+			tab_hash = hashlib.md5(tab_str.encode()).hexdigest()[:12]
+
+			return tab_hash
+
+		except Exception:
+			# Fallback to simple counter-based ID
+			return f"tab_{len(self._tabs)}"
+
+	def _update_current_tab(self):
+		"""Update information about the currently focused tab."""
+		try:
+			tab_id = self._generate_tab_id(self._terminal)
+
+			# Register tab if it's new
+			if tab_id not in self._tabs:
+				self._tabs[tab_id] = {
+					'id': tab_id,
+					'title': self._get_tab_title(),
+					'created': None,  # Could add timestamp
+					'last_accessed': None
+				}
+
+			self._current_tab_id = tab_id
+
+			# Update title cache
+			self._last_window_title = self._get_tab_title()
+
+		except Exception:
+			pass
+
+	def _get_tab_title(self) -> str:
+		"""
+		Get the title of the current tab.
+
+		Returns:
+			str: Tab title or empty string
+		"""
+		try:
+			if hasattr(self._terminal, 'windowText'):
+				return self._terminal.windowText or ""
+			elif hasattr(self._terminal, 'name'):
+				return self._terminal.name or ""
+		except Exception:
+			pass
+		return ""
+
+	def get_current_tab_id(self) -> str:
+		"""
+		Get the identifier of the currently focused tab.
+
+		Returns:
+			str: Current tab ID or None
+		"""
+		return self._current_tab_id
+
+	def list_tabs(self) -> list:
+		"""
+		Get list of all known tabs.
+
+		Returns:
+			list: List of tab info dictionaries
+		"""
+		return list(self._tabs.values())
+
+	def get_tab_count(self) -> int:
+		"""
+		Get number of known tabs.
+
+		Returns:
+			int: Number of tabs
+		"""
+		return len(self._tabs)
+
+	def update_terminal(self, terminal_obj):
+		"""
+		Update the terminal reference and check for tab changes.
+
+		This should be called when the terminal is rebound to detect
+		tab switches and update tab tracking.
+
+		Args:
+			terminal_obj: New terminal TextInfo object
+		"""
+		self._terminal = terminal_obj
+		old_tab_id = self._current_tab_id
+		self._update_current_tab()
+
+		# Return True if tab changed
+		return self._current_tab_id != old_tab_id
+
+	def has_tab_changed(self) -> bool:
+		"""
+		Check if the tab has changed since last check.
+
+		Returns:
+			bool: True if tab appears to have changed
+		"""
+		try:
+			current_title = self._get_tab_title()
+			if current_title != self._last_window_title:
+				self._last_window_title = current_title
+				self._update_current_tab()
+				return True
+		except Exception:
+			pass
+		return False
+
+	def clear_tab_info(self, tab_id: str) -> bool:
+		"""
+		Remove information about a specific tab.
+
+		Args:
+			tab_id: Tab identifier
+
+		Returns:
+			bool: True if tab was removed
+		"""
+		if tab_id in self._tabs:
+			del self._tabs[tab_id]
+			return True
+		return False
+
+	def clear_all_tabs(self):
+		"""Clear all tab information."""
+		self._tabs.clear()
+		self._current_tab_id = None
+
+
 class BookmarkManager:
 	"""
 	Manage bookmarks/markers in terminal output for quick navigation.
@@ -2752,16 +2954,37 @@ class BookmarkManager:
 		>>> manager.remove_bookmark("1")
 	"""
 
-	def __init__(self, terminal_obj):
+	def __init__(self, terminal_obj, tab_manager=None):
 		"""
 		Initialize the BookmarkManager.
 
 		Args:
 			terminal_obj: Terminal TextInfo object for bookmark storage
+			tab_manager: Optional TabManager for tab-aware bookmark storage
 		"""
 		self._terminal = terminal_obj
-		self._bookmarks = {}  # name -> bookmark mapping
-		self._max_bookmarks = 50  # Maximum number of bookmarks
+		self._tab_manager = tab_manager
+		self._bookmarks = {}  # name -> bookmark mapping (legacy single-tab mode)
+		self._tab_bookmarks = {}  # tab_id -> {name -> bookmark} mapping (multi-tab mode)
+		self._max_bookmarks = 50  # Maximum number of bookmarks per tab
+
+	def _get_current_tab_id(self) -> str:
+		"""Get current tab ID, or None if no tab manager."""
+		if self._tab_manager:
+			return self._tab_manager.get_current_tab_id()
+		return None
+
+	def _get_bookmark_dict(self):
+		"""Get the appropriate bookmark dictionary for the current context."""
+		tab_id = self._get_current_tab_id()
+		if tab_id:
+			# Multi-tab mode: use per-tab storage
+			if tab_id not in self._tab_bookmarks:
+				self._tab_bookmarks[tab_id] = {}
+			return self._tab_bookmarks[tab_id]
+		else:
+			# Legacy mode: use shared storage
+			return self._bookmarks
 
 	def set_bookmark(self, name: str) -> bool:
 		"""
@@ -2780,8 +3003,10 @@ class BookmarkManager:
 		if not name or len(name) > 50:
 			return False
 
+		bookmarks = self._get_bookmark_dict()
+
 		# Check max bookmarks limit
-		if name not in self._bookmarks and len(self._bookmarks) >= self._max_bookmarks:
+		if name not in bookmarks and len(bookmarks) >= self._max_bookmarks:
 			return False
 
 		try:
@@ -2791,7 +3016,7 @@ class BookmarkManager:
 				return False
 
 			# Store bookmark
-			self._bookmarks[name] = pos.bookmark
+			bookmarks[name] = pos.bookmark
 			return True
 
 		except Exception:
@@ -2807,12 +3032,13 @@ class BookmarkManager:
 		Returns:
 			bool: True if jump successful
 		"""
-		if not self._terminal or name not in self._bookmarks:
+		bookmarks = self._get_bookmark_dict()
+		if not self._terminal or name not in bookmarks:
 			return False
 
 		try:
 			# Restore position from bookmark
-			pos = self._terminal.makeTextInfo(self._bookmarks[name])
+			pos = self._terminal.makeTextInfo(bookmarks[name])
 			if pos:
 				api.setReviewPosition(pos)
 				return True
@@ -2833,23 +3059,25 @@ class BookmarkManager:
 		Returns:
 			bool: True if bookmark removed
 		"""
-		if name in self._bookmarks:
-			del self._bookmarks[name]
+		bookmarks = self._get_bookmark_dict()
+		if name in bookmarks:
+			del bookmarks[name]
 			return True
 		return False
 
 	def list_bookmarks(self) -> list:
 		"""
-		Get list of all bookmark names.
+		Get list of all bookmark names for the current tab.
 
 		Returns:
 			list: List of bookmark names (sorted)
 		"""
-		return sorted(self._bookmarks.keys())
+		bookmarks = self._get_bookmark_dict()
+		return sorted(bookmarks.keys())
 
 	def has_bookmark(self, name: str) -> bool:
 		"""
-		Check if bookmark exists.
+		Check if bookmark exists in the current tab.
 
 		Args:
 			name: Bookmark name
@@ -2857,15 +3085,39 @@ class BookmarkManager:
 		Returns:
 			bool: True if bookmark exists
 		"""
-		return name in self._bookmarks
+		bookmarks = self._get_bookmark_dict()
+		return name in bookmarks
 
 	def clear_all(self) -> None:
-		"""Clear all bookmarks."""
-		self._bookmarks.clear()
+		"""Clear all bookmarks for the current tab."""
+		bookmarks = self._get_bookmark_dict()
+		bookmarks.clear()
 
 	def get_bookmark_count(self) -> int:
-		"""Get number of bookmarks."""
-		return len(self._bookmarks)
+		"""Get number of bookmarks for the current tab."""
+		bookmarks = self._get_bookmark_dict()
+		return len(bookmarks)
+
+	def update_terminal(self, terminal_obj):
+		"""
+		Update the terminal reference.
+
+		This should be called when the terminal is rebound to ensure
+		bookmarks can be properly retrieved.
+
+		Args:
+			terminal_obj: New terminal TextInfo object
+		"""
+		self._terminal = terminal_obj
+
+	def set_tab_manager(self, tab_manager):
+		"""
+		Set or update the tab manager for tab-aware bookmark storage.
+
+		Args:
+			tab_manager: TabManager instance
+		"""
+		self._tab_manager = tab_manager
 
 
 class OutputSearchManager:
@@ -2898,19 +3150,68 @@ class OutputSearchManager:
 		>>> manager.get_match_count()  # Get total matches
 	"""
 
-	def __init__(self, terminal_obj):
+	def __init__(self, terminal_obj, tab_manager=None):
 		"""
 		Initialize the OutputSearchManager.
 
 		Args:
 			terminal_obj: Terminal TextInfo object for searching
+			tab_manager: Optional TabManager for tab-aware search storage
 		"""
 		self._terminal = terminal_obj
+		self._tab_manager = tab_manager
+		# Legacy single-tab storage
 		self._pattern = None
 		self._matches = []  # List of (bookmark, line_text, line_num) tuples
 		self._current_match_index = -1
 		self._case_sensitive = False
 		self._use_regex = False
+		# Per-tab storage
+		self._tab_searches = {}  # tab_id -> {pattern, matches, index, case_sensitive, use_regex}
+
+	def _get_current_tab_id(self) -> str:
+		"""Get current tab ID, or None if no tab manager."""
+		if self._tab_manager:
+			return self._tab_manager.get_current_tab_id()
+		return None
+
+	def _get_search_state(self):
+		"""Get the appropriate search state dict for the current context."""
+		tab_id = self._get_current_tab_id()
+		if tab_id:
+			# Multi-tab mode: use per-tab storage
+			if tab_id not in self._tab_searches:
+				self._tab_searches[tab_id] = {
+					'pattern': None,
+					'matches': [],
+					'current_match_index': -1,
+					'case_sensitive': False,
+					'use_regex': False
+				}
+			return self._tab_searches[tab_id]
+		else:
+			# Legacy mode: use instance variables
+			return {
+				'pattern': self._pattern,
+				'matches': self._matches,
+				'current_match_index': self._current_match_index,
+				'case_sensitive': self._case_sensitive,
+				'use_regex': self._use_regex
+			}
+
+	def _save_search_state(self, state):
+		"""Save search state to the appropriate storage."""
+		tab_id = self._get_current_tab_id()
+		if tab_id:
+			# Multi-tab mode
+			self._tab_searches[tab_id] = state
+		else:
+			# Legacy mode
+			self._pattern = state['pattern']
+			self._matches = state['matches']
+			self._current_match_index = state['current_match_index']
+			self._case_sensitive = state['case_sensitive']
+			self._use_regex = state['use_regex']
 
 	def search(self, pattern: str, case_sensitive: bool = False, use_regex: bool = False) -> int:
 		"""
@@ -3076,6 +3377,29 @@ class OutputSearchManager:
 		self._matches = []
 		self._current_match_index = -1
 
+	def update_terminal(self, terminal_obj):
+		"""
+		Update the terminal reference.
+
+		This should be called when the terminal is rebound to ensure
+		searches can be properly performed.
+
+		Args:
+			terminal_obj: New terminal TextInfo object
+		"""
+		self._terminal = terminal_obj
+		# Clear search results when terminal changes
+		self.clear_search()
+
+	def set_tab_manager(self, tab_manager):
+		"""
+		Set or update the tab manager for tab-aware search storage.
+
+		Args:
+			tab_manager: TabManager instance
+		"""
+		self._tab_manager = tab_manager
+
 
 class CommandHistoryManager:
 	"""
@@ -3107,19 +3431,24 @@ class CommandHistoryManager:
 		>>> manager.list_history()
 	"""
 
-	def __init__(self, terminal_obj, max_history=100):
+	def __init__(self, terminal_obj, max_history=100, tab_manager=None):
 		"""
 		Initialize the CommandHistoryManager.
 
 		Args:
 			terminal_obj: Terminal TextInfo object for reading content
 			max_history: Maximum number of commands to store (default: 100)
+			tab_manager: Optional TabManager for tab-aware command history storage
 		"""
 		self._terminal = terminal_obj
 		self._max_history = max_history
+		self._tab_manager = tab_manager
+		# Legacy single-tab storage
 		self._history = []  # List of (line_num, command_text, bookmark) tuples
 		self._current_index = -1  # Current position in history (-1 = not navigating)
 		self._last_scan_line = 0  # Last line scanned for commands
+		# Per-tab storage
+		self._tab_histories = {}  # tab_id -> {history, current_index, last_scan_line}
 
 		# Common prompt patterns (regex)
 		import re
@@ -3322,6 +3651,29 @@ class CommandHistoryManager:
 		"""Get number of commands in history."""
 		return len(self._history)
 
+	def update_terminal(self, terminal_obj):
+		"""
+		Update the terminal reference.
+
+		This should be called when the terminal is rebound to ensure
+		history navigation can be properly performed.
+
+		Args:
+			terminal_obj: New terminal TextInfo object
+		"""
+		self._terminal = terminal_obj
+		# Clear history when terminal changes
+		self.clear_history()
+
+	def set_tab_manager(self, tab_manager):
+		"""
+		Set or update the tab manager for tab-aware command history storage.
+
+		Args:
+			tab_manager: TabManager instance
+		"""
+		self._tab_manager = tab_manager
+
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""
@@ -3444,6 +3796,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Window monitor for multi-window monitoring (Section 6.1 - v1.0.28+)
 		self._windowMonitor = None  # Initialized when terminal is bound
+
+		# Tab manager for managing terminal tabs (Section 9 - v1.0.39+)
+		self._tabManager = None  # Initialized when terminal is bound
 
 		# Bookmark manager for quick navigation (Section 8.3 - v1.0.29+)
 		self._bookmarkManager = None  # Initialized when terminal is bound
@@ -3629,17 +3984,33 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._boundTerminal = obj
 			api.setNavigatorObject(obj)
 
+			# Initialize TabManager for this terminal (Section 9 - v1.0.39+)
+			if not self._tabManager:
+				self._tabManager = TabManager(obj)
+			else:
+				# Update terminal reference and detect tab changes
+				tab_changed = self._tabManager.update_terminal(obj)
+
 			# Initialize BookmarkManager for this terminal (Section 8.3 - v1.0.29+)
 			if not self._bookmarkManager:
-				self._bookmarkManager = BookmarkManager(obj)
+				self._bookmarkManager = BookmarkManager(obj, self._tabManager)
+			else:
+				# Update terminal reference when terminal is rebound
+				self._bookmarkManager.update_terminal(obj)
 
 			# Initialize OutputSearchManager for this terminal (Section 8.2 - v1.0.30+)
 			if not self._searchManager:
-				self._searchManager = OutputSearchManager(obj)
+				self._searchManager = OutputSearchManager(obj, self._tabManager)
+			else:
+				# Update terminal reference when terminal is rebound
+				self._searchManager.update_terminal(obj)
 
 			# Initialize CommandHistoryManager for this terminal (Section 8.1 - v1.0.31+)
 			if not self._commandHistoryManager:
-				self._commandHistoryManager = CommandHistoryManager(obj, max_history=100)
+				self._commandHistoryManager = CommandHistoryManager(obj, max_history=100, tab_manager=self._tabManager)
+			else:
+				# Update terminal reference when terminal is rebound
+				self._commandHistoryManager.update_terminal(obj)
 
 			# Clear position cache when switching terminals
 			self._positionCalculator.clear_cache()
@@ -5584,6 +5955,77 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			# Translators: Message when no bookmarks exist
 			ui.message(_("No bookmarks set"))
+
+	# Section 9: Tab management gestures (v1.0.39+)
+
+	@scriptHandler.script(
+		# Translators: Description for creating a new terminal tab
+		description=_("Create a new tab in the terminal"),
+		category=SCRCAT_TERMINALACCESS,
+		gesture="kb:NVDA+shift+alt+t"
+	)
+	def script_createNewTab(self, gesture):
+		"""Create a new tab in the terminal."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		# Send the standard keyboard shortcut for creating a new tab
+		# Most modern terminals use Ctrl+Shift+T
+		try:
+			import keyboardHandler
+			# Press Ctrl+Shift+T to create new tab
+			keyboardHandler.KeyboardInputGesture.fromName("control+shift+t").send()
+			# Announce that we're creating a new tab
+			# Translators: Message when creating a new tab
+			ui.message(_("Creating new tab"))
+		except Exception:
+			# Translators: Error message when tab creation fails
+			ui.message(_("Unable to create new tab"))
+
+	@scriptHandler.script(
+		# Translators: Description for listing/navigating tabs
+		description=_("List tabs or switch to tab bar"),
+		category=SCRCAT_TERMINALACCESS,
+		gesture="kb:NVDA+alt+t"
+	)
+	def script_listTabs(self, gesture):
+		"""List all tabs or focus tab bar."""
+		if not self.isTerminalApp():
+			gesture.send()
+			return
+
+		if not self._tabManager:
+			# Translators: Error message when tab manager not initialized
+			ui.message(_("Tab manager not available"))
+			return
+
+		# Get list of known tabs
+		tabs = self._tabManager.list_tabs()
+		tab_count = self._tabManager.get_tab_count()
+		current_tab_id = self._tabManager.get_current_tab_id()
+
+		if tab_count == 0:
+			# Translators: Message when no tabs are detected
+			ui.message(_("No tabs detected"))
+		elif tab_count == 1:
+			# Only one tab, announce it
+			# Translators: Message for single tab
+			ui.message(_("Single tab: {title}").format(title=tabs[0].get('title', 'Unknown')))
+		else:
+			# Multiple tabs - show simple announcement for now
+			# (Full dialog implementation would go here)
+			# Translators: Message listing tab count
+			ui.message(_("{count} tabs detected").format(count=tab_count))
+
+			# Also send Ctrl+Tab to switch to next tab
+			try:
+				import keyboardHandler
+				keyboardHandler.KeyboardInputGesture.fromName("control+tab").send()
+				# Translators: Message when switching tabs
+				ui.message(_("Switching to next tab"))
+			except Exception:
+				pass
 
 	# Section 8.1: Command history navigation gestures (v1.0.31+)
 

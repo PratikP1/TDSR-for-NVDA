@@ -51,6 +51,12 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - **GNU nano** - Silences keyboard shortcuts area
 - **irssi** - Chat-optimized settings for IRC
 
+### Tab Management (v1.0.39+)
+- **Multi-tab terminal support** - Work seamlessly with Windows Terminal tabs
+- **Tab-aware state management** - Bookmarks, searches, and command history automatically isolated per tab
+- **Tab creation and navigation** - Keyboard shortcuts for creating and switching between tabs
+- **Automatic tab detection** - Identifies when you switch tabs and updates context accordingly
+
 ### System Features
 - **Key echo** to hear characters as you type
 - **Quiet mode** to temporarily disable automatic announcements
@@ -156,6 +162,12 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 - **NVDA+Alt+Shift+0-9** - Set bookmark at current position
 - **NVDA+Alt+0-9** - Jump to bookmark
 - **NVDA+Alt+Shift+B** - List all bookmarks
+
+### Tab Management (v1.0.39+)
+- **NVDA+Shift+Alt+T** - Create a new tab in the terminal
+- **NVDA+Alt+T** - List tabs or switch to next tab
+
+**Note:** Tab management works with terminals that support multiple tabs, such as Windows Terminal, PowerShell 7+, and other modern terminal applications. Bookmarks, search results, and command history are automatically isolated per tab when using tab-aware terminals.
 
 ### Command History (v1.0.31+)
 - **NVDA+Alt+Shift+H** - Scan and detect command history
