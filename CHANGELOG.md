@@ -8,6 +8,14 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 - Raised minimum NVDA requirement to 2025.1 (Python 3.11 runtime); compatibility with earlier versions removed
 
+## [1.0.45] - 2026-02-23
+
+### Fixed
+
+- Fixed keyboard command binding error by stripping "script_" prefix in _collectTerminalGestures()
+- Keyboard gestures now bind correctly without "Error binding script" messages
+- Gestures remain properly scoped to terminal windows only (not global)
+
 ## [1.0.44] - 2026-02-23
 
 ### Changed

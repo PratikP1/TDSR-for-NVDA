@@ -3879,8 +3879,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				continue
 			if isinstance(gestures, str):
 				gestures = [gestures]
+			# Strip "script_" prefix for NVDA's bindGestures
+			script_name = attr_name[7:]  # Remove "script_" prefix
 			for gesture in gestures:
-				gesture_map.setdefault(gesture, attr_name)
+				gesture_map.setdefault(gesture, script_name)
 		return gesture_map
 
 	def _enableTerminalGestures(self):
