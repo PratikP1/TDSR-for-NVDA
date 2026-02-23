@@ -112,7 +112,15 @@ Yes! As of v1.0.26, Terminal Access supports 13 popular third-party terminal emu
 
 ### Does Terminal Access work with WSL (Windows Subsystem for Linux)?
 
-WSL terminals should work as they run through Windows Terminal or other supported terminals. However, WSL-specific testing has not been comprehensive. If you encounter issues, please report them on GitHub.
+Yes! Terminal Access includes full support for WSL as of v1.0.27+. Features include:
+
+- **Automatic WSL detection**: Recognizes `wsl` and `bash` processes
+- **WSL-specific profile**: Optimized for Linux command-line usage with enhanced punctuation for paths and operators
+- **Full compatibility**: Works with both WSL 1 and WSL 2
+- **Distribution support**: Tested with Ubuntu, Debian, Arch, Fedora, and openSUSE
+- **Development tools**: Supports vim, git, tmux, and other Linux CLI tools
+
+For detailed setup instructions, testing procedures, and troubleshooting, see the **[WSL Testing Guide](WSL_TESTING_GUIDE.md)**.
 
 ### Can I use Terminal Access with SSH connections?
 

@@ -50,6 +50,7 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - **Git** - Enhanced punctuation for diffs and logs
 - **GNU nano** - Silences keyboard shortcuts area
 - **irssi** - Chat-optimized settings for IRC
+- **WSL (v1.0.27+)** - Linux command-line optimized with enhanced punctuation for paths and operators
 
 ### Tab Management (v1.0.39+)
 - **Multi-tab terminal support** - Work seamlessly with Windows Terminal tabs
@@ -71,9 +72,13 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - PowerShell Core (pwsh)
 - Command Prompt (cmd.exe)
 - Console Host (conhost.exe)
-- +WSL1 and WSL2
 
-**Third-Party Terminal Emulators - 13 terminals):**
+**Windows Subsystem for Linux (WSL):**
+- WSL1 and WSL2 (all distributions)
+- Automatic detection and optimized profile
+- Full support for Linux commands and tools
+
+**Third-Party Terminal Emulators (13):**
 - Cmder - Portable console emulator
 - ConEmu - Console emulator with tabs (32-bit and 64-bit)
 - mintty - Git Bash and Cygwin terminal
@@ -86,9 +91,9 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 - Tabby - Modern terminal with SSH support
 - FluentTerminal - UWP-based terminal
 
-**Total: 19 supported terminal applications**
+**Total: 19 supported terminal applications (including WSL)**
 
-For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md#third-party-terminal-support).
+For detailed information about each terminal, see [ADVANCED_USER_GUIDE.md](docs/user/ADVANCED_USER_GUIDE.md#third-party-terminal-support). For WSL-specific information, see [WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md).
 
 ## System Requirements
 
