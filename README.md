@@ -93,7 +93,7 @@ Terminal Access enables screen reader users to efficiently navigate and interact
 
 **Total: 19 supported terminal applications (including WSL)**
 
-For detailed information about each terminal and third-party terminal support, see the [Advanced User Guide](docs/user/ADVANCED_USER_GUIDE.md). For WSL-specific information, see [WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md).
+For detailed information about each terminal and third-party terminal support, see the [User Guide](addon/doc/en/readme.html). For WSL-specific information, see [WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md).
 
 ## System Requirements
 
@@ -120,7 +120,7 @@ Press **NVDA+Shift+F1** to open the comprehensive user guide.
 Terminal Access provides keyboard shortcuts for efficient terminal navigation. For the complete list of gestures and detailed usage instructions, see:
 
 - Press **NVDA+Shift+F1** while using the add-on to view the built-in guide
-- View the [Advanced User Guide](docs/user/ADVANCED_USER_GUIDE.md) for detailed documentation
+- View the [User Guide](addon/doc/en/readme.html) for detailed documentation
 - Refer to `addon/doc/en/readme.html` file
 
 **Most Common Gestures:**
@@ -130,7 +130,7 @@ Terminal Access provides keyboard shortcuts for efficient terminal navigation. F
 - **NVDA+Alt+[/]** - Adjust punctuation level
 - **NVDA+Alt+Q** - Toggle quiet mode
 
-For complete gesture documentation and advanced features, see the [Advanced User Guide](docs/user/ADVANCED_USER_GUIDE.md).
+For complete gesture documentation and advanced features, see the [User Guide](addon/doc/en/readme.html).
 
 ## Configuration
 
@@ -183,7 +183,7 @@ For troubleshooting common issues, please refer to the **[FAQ.md](docs/user/FAQ.
 ## Additional Documentation
 
 ### User Documentation
-- **[Advanced User Guide](docs/user/ADVANCED_USER_GUIDE.md)** - Comprehensive guide covering application profiles, third-party terminal support, window definitions, Unicode/CJK support, and performance optimization
+- **[User Guide](addon/doc/en/readme.html)** - Comprehensive guide covering basic and advanced features including application profiles, third-party terminal support, window definitions, Unicode/CJK support, and performance optimization
 - **[FAQ.md](docs/user/FAQ.md)** - Frequently asked questions covering general questions, terminal compatibility, feature usage, troubleshooting, and advanced topics
 - **[WSL_TESTING_GUIDE.md](docs/user/WSL_TESTING_GUIDE.md)** - Windows Subsystem for Linux guide
 - **[TRANSLATION_GUIDE.md](docs/user/TRANSLATION_GUIDE.md)** - Guide for translators (v1.0.32+)
