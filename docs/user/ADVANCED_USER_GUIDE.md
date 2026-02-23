@@ -7,7 +7,6 @@
 3. [Window Definitions](#window-definitions)
 4. [Unicode and CJK Text](#unicode-and-cjk-text)
 5. [Performance Optimization](#performance-optimization)
-6. [Troubleshooting Advanced Scenarios](#troubleshooting-advanced-scenarios)
 
 ---
 
@@ -401,98 +400,14 @@ Large rectangular selections (>100 rows) run in background threads:
 
 ---
 
-## Troubleshooting Advanced Scenarios
-
-### Profile Not Applied Automatically
-
-**Symptoms**: Profile doesn't activate when switching to an application
-
-**Solutions**:
-1. Check application name detection:
-   - Open NVDA log (NVDA+F1)
-   - Look for Terminal Access profile detection messages
-
-2. Verify profile exists:
-   - Open Terminal Access Settings → Application Profiles
-   - Check if profile is in the list
-
-3. Manual profile application:
-   - Try exporting and re-importing the profile
-   - Check JSON for correct `appName` field
-
-### RTL Text Not Displaying Correctly
-
-**Symptoms**: Arabic or Hebrew text appears reversed or garbled
-
-**Solutions**:
-1. Install optional dependencies:
-   ```bash
-   pip install python-bidi arabic-reshaper
-   ```
-
-2. Restart NVDA after installing dependencies
-
-3. Verify text direction:
-   - Check that text contains RTL characters
-   - Mixed RTL/LTR text should work automatically
-
-### Third-Party Terminal Not Detected
-
-**Symptoms**: Terminal Access doesn't activate in a third-party terminal
-
-**Solutions**:
-1. Verify terminal is supported (see list above)
-
-2. Check application name:
-   - Open NVDA Python console (NVDA+Control+Z)
-   - Run: `api.getForegroundObject().appModule.appName`
-   - Compare with supported terminal names
-
-3. Create a GitHub issue:
-   - Include terminal name and version
-   - Include appModule name from step 2
-   - We can add support in a future release
-
-### Performance Issues in Large Buffers
-
-**Symptoms**: Slow response when navigating in buffers with 1000+ rows
-
-**Solutions**:
-1. Position caching should help automatically
-   - Verify cache is enabled (it is by default)
-
-2. Use incremental tracking:
-   - Small cursor movements are optimized automatically
-
-3. For extremely large buffers:
-   - Consider using search/jump commands
-   - Use bookmarks for frequent positions (future feature)
-
-### Emoji Displaying as Single Characters
-
-**Symptoms**: Complex emoji (family, flags) show as multiple characters
-
-**Solutions**:
-1. Install emoji library:
-   ```bash
-   pip install emoji
-   ```
-
-2. Restart NVDA after installing
-
-3. If still not working:
-   - Check terminal's emoji support
-   - Some terminals may not render complex emoji sequences
-
----
-
 ## Additional Resources
 
-- **GitHub Repository**: https://github.com/PratikP1/Terminal-Access-for-NVDA
-- **Issue Tracker**: Report bugs and request features
-- **CHANGELOG.md**: Detailed version history
-- **API_REFERENCE.md**: Developer API documentation
-- **ARCHITECTURE.md**: System design and architecture
+For troubleshooting and frequently asked questions, see:
+- **[FAQ.md](FAQ.md)** - Comprehensive troubleshooting section with solutions for common issues
+- **[GitHub Repository](https://github.com/PratikP1/Terminal-Access-for-NVDA)** - Source code and issue tracker
+- **[CHANGELOG.md](../../CHANGELOG.md)** - Detailed version history
+- **[API_REFERENCE.md](../developer/API_REFERENCE.md)** - Developer API documentation
+- **[ARCHITECTURE.md](../developer/ARCHITECTURE.md)** - System design and architecture
 
 For support, please open an issue on GitHub with:
 - NVDA version
@@ -500,3 +415,4 @@ For support, please open an issue on GitHub with:
 - Terminal application and version
 - Steps to reproduce
 - Expected vs. actual behavior
+

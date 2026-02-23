@@ -248,6 +248,24 @@ This prevents repetitive announcements of status bars and other UI elements.
    - Open NVDA Python Console (NVDA+Control+Z)
    - Run: `api.getForegroundObject().appModule.appName`
    - Compare with profile name
+4. Manual profile application:
+   - Try exporting and re-importing the profile
+   - Check JSON for correct `appName` field
+
+### Third-party terminal not detected
+
+**Symptoms**: Terminal Access doesn't activate in a third-party terminal
+
+**Solutions**:
+1. Verify terminal is supported (see compatibility list in the README)
+2. Check application name:
+   - Open NVDA Python console (NVDA+Control+Z)
+   - Run: `api.getForegroundObject().appModule.appName`
+   - Compare with supported terminal names
+3. Create a GitHub issue:
+   - Include terminal name and version
+   - Include appModule name from step 2
+   - We can add support in a future release
 
 ### RTL text (Arabic/Hebrew) displays incorrectly
 
@@ -273,6 +291,20 @@ Without these libraries, Terminal Access provides basic Unicode support but not 
 - Use search/jump commands instead of line-by-line navigation
 - Consider reducing buffer size in terminal settings
 - Report performance issues on GitHub with buffer size details
+
+### Emoji displaying as single characters
+
+**Symptoms**: Complex emoji (family, flags) show as multiple characters
+
+**Solutions**:
+1. Install emoji library:
+   ```bash
+   pip install emoji
+   ```
+2. Restart NVDA after installing
+3. If still not working:
+   - Check terminal's emoji support
+   - Some terminals may not render complex emoji sequences
 
 ### No speech when moving cursor
 
