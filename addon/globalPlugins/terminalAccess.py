@@ -80,6 +80,7 @@ from gui import guiHelper, nvdaControls
 from gui.settingsDialogs import SettingsPanel
 import addonHandler
 import wx
+import collections
 import os
 import re
 import time
@@ -156,6 +157,60 @@ confspec = {
 
 # Register configuration
 config.conf.spec["terminalAccess"] = confspec
+
+# ---------------------------------------------------------------------------
+# Module-level constants (hoisted from hot-path methods)
+# ---------------------------------------------------------------------------
+
+# Frozenset of all supported terminal application names (used in isTerminalApp)
+_SUPPORTED_TERMINALS: frozenset = frozenset([
+	# Built-in Windows terminal applications
+	"windowsterminal",  # Windows Terminal
+	"cmd",              # Command Prompt
+	"powershell",       # Windows PowerShell
+	"pwsh",             # PowerShell Core
+	"conhost",          # Console Host
+	# Third-party terminal emulators
+	"cmder",            # Cmder
+	"conemu",           # ConEmu (32-bit)
+	"conemu64",         # ConEmu (64-bit)
+	"mintty",           # Git Bash (mintty)
+	"putty",            # PuTTY
+	"kitty",            # KiTTY (PuTTY fork)
+	"terminus",         # Terminus
+	"hyper",            # Hyper
+	"alacritty",        # Alacritty
+	"wezterm",          # WezTerm
+	"wezterm-gui",      # WezTerm GUI
+	"tabby",            # Tabby
+	"fluent",           # FluentTerminal
+	# WSL (Windows Subsystem for Linux)
+	"wsl",              # WSL executable
+	"bash",             # WSL bash
+])
+
+# Frozenset of built-in profile names that cannot be removed
+_BUILTIN_PROFILE_NAMES: frozenset = frozenset([
+	'vim', 'tmux', 'htop', 'less', 'git', 'nano', 'irssi',
+])
+
+# Compiled regex for stripping ANSI highlight codes (used in _extractHighlightedText)
+_ANSI_HIGHLIGHT_RE: re.Pattern = re.compile(r'\x1b\[[0-9;]*m')
+
+# Compiled prompt patterns for CommandHistoryManager (avoids re-compilation per instance)
+_PROMPT_PATTERNS: list = [
+	# Bash prompts: user@host:~$, root@host:#, simple $/#
+	re.compile(r'^[\w\-\.]+@[\w\-\.]+:[^\$#]*[\$#]\s*(.+)$'),
+	re.compile(r'^[\$#]\s*(.+)$'),
+	# PowerShell prompts: PS>, PS C:\>, PS /home/user>
+	re.compile(r'^PS\s+[A-Za-z]:[^>]*>\s*(.+)$'),
+	re.compile(r'^PS\s+/[^>]*>\s*(.+)$'),
+	re.compile(r'^PS>\s*(.+)$'),
+	# Windows CMD prompts: C:\>, D:\Users\name>
+	re.compile(r'^[A-Za-z]:[^>]*>\s*(.+)$'),
+	# Generic prompt with colon or arrow
+	re.compile(r'^[^\s>:]+[>:]\s*(.+)$'),
+]
 
 
 class PositionCache:
@@ -293,6 +348,8 @@ class TextDiffer:
 	KIND_APPENDED = "appended"  # New text was appended after old text
 	KIND_CHANGED = "changed"    # Non-trivial change (edit, clear, etc.)
 
+	__slots__ = ('_last_text',)
+
 	def __init__(self) -> None:
 		"""Initialise with no previous snapshot."""
 		self._last_text: Optional[str] = None
@@ -411,6 +468,10 @@ class ANSIParser:
 		9: 'strikethrough',
 	}
 
+	# Compiled regex patterns (class-level to avoid recompilation per call)
+	_SGR_PATTERN: re.Pattern = re.compile(r'\x1b\[([0-9;]+)m')
+	_STRIP_PATTERN: re.Pattern = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+
 	def __init__(self) -> None:
 		"""Initialize the ANSI parser."""
 		self.foreground: Optional[Union[str, Tuple[int, int, int]]] = None
@@ -454,8 +515,7 @@ class ANSIParser:
 			}
 		"""
 		# Find all ANSI escape sequences
-		pattern = re.compile(r'\x1b\[([0-9;]+)m')
-		matches = pattern.findall(text)
+		matches = self._SGR_PATTERN.findall(text)
 
 		for match in matches:
 			codes = [int(c) for c in match.split(';') if c]
@@ -633,9 +693,7 @@ class ANSIParser:
 		Returns:
 			str: Text with ANSI codes removed
 		"""
-		# Remove all ANSI escape sequences
-		ansi_pattern = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
-		return ansi_pattern.sub('', text)
+		return ANSIParser._STRIP_PATTERN.sub('', text)
 
 
 class UnicodeWidthHelper:
@@ -1177,6 +1235,8 @@ class WindowDefinition:
 		All coordinates are 1-based (row 1, col 1 is top-left).
 	"""
 
+	__slots__ = ('name', 'top', 'bottom', 'left', 'right', 'mode', 'enabled')
+
 	def __init__(self, name: str, top: int, bottom: int, left: int, right: int,
 				 mode: str = 'announce', enabled: bool = True) -> None:
 		"""
@@ -1618,7 +1678,7 @@ class ProfileManager:
 
 	def removeProfile(self, appName: str) -> None:
 		"""Remove a profile."""
-		if appName in self.profiles and appName not in ['vim', 'tmux', 'htop', 'less', 'git', 'nano', 'irssi']:
+		if appName in self.profiles and appName not in _BUILTIN_PROFILE_NAMES:
 			del self.profiles[appName]
 
 	def exportProfile(self, appName: str) -> Optional[Dict[str, Any]]:
@@ -3727,31 +3787,15 @@ class CommandHistoryManager:
 		self._terminal = terminal_obj
 		self._max_history = max_history
 		self._tab_manager = tab_manager
-		# Legacy single-tab storage
-		self._history = []  # List of (line_num, command_text, bookmark) tuples
+		# Legacy single-tab storage (deque for O(1) pop-from-front when limiting size)
+		self._history: collections.deque = collections.deque(maxlen=max_history)
 		self._current_index = -1  # Current position in history (-1 = not navigating)
 		self._last_scan_line = 0  # Last line scanned for commands
 		# Per-tab storage
 		self._tab_histories = {}  # tab_id -> {history, current_index, last_scan_line}
 
-		# Common prompt patterns (regex)
-		import re
-		self._prompt_patterns = [
-			# Bash prompts: user@host:~$, root@host:#, simple $/#
-			re.compile(r'^[\w\-\.]+@[\w\-\.]+:[^\$#]*[\$#]\s*(.+)$'),
-			re.compile(r'^[\$#]\s*(.+)$'),
-
-			# PowerShell prompts: PS>, PS C:\>, PS /home/user>
-			re.compile(r'^PS\s+[A-Za-z]:[^>]*>\s*(.+)$'),
-			re.compile(r'^PS\s+/[^>]*>\s*(.+)$'),
-			re.compile(r'^PS>\s*(.+)$'),
-
-			# Windows CMD prompts: C:\>, D:\Users\name>
-			re.compile(r'^[A-Za-z]:[^>]*>\s*(.+)$'),
-
-			# Generic prompt with colon or arrow
-			re.compile(r'^[^\s>:]+[>:]\s*(.+)$'),
-		]
+		# Use module-level compiled prompt patterns
+		self._prompt_patterns = _PROMPT_PATTERNS
 
 	def detect_and_store_commands(self) -> int:
 		"""
@@ -3808,11 +3852,9 @@ class CommandHistoryManager:
 							self._history.append((line_num, command_text, bookmark))
 							new_commands += 1
 
-							# Limit history size
-							if len(self._history) > self._max_history:
-								self._history.pop(0)
+							# deque(maxlen=...) handles size limiting automatically
 
-						except Exception:
+					except Exception:
 							# Bookmark creation failed, skip this command
 							pass
 
@@ -4049,7 +4091,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	
 	def __init__(self):
 		"""Initialize the Terminal Access global plugin."""
-		super(GlobalPlugin, self).__init__()
+		super().__init__()
 
 		# Initialize manager classes for configuration, windows, and position tracking
 		self._configManager = ConfigManager()
@@ -4237,42 +4279,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not isinstance(appName, str):
 			return False
 
-		# Built-in Windows terminal applications (v1.0.0+)
-		builtinTerminals = [
-			"windowsterminal",  # Windows Terminal
-			"cmd",              # Command Prompt
-			"powershell",       # Windows PowerShell
-			"pwsh",             # PowerShell Core
-			"conhost",          # Console Host
-		]
-
-		# Third-party terminal emulators (v1.0.26+)
-		# Section 5.1: Additional Terminal Emulator Support
-		thirdPartyTerminals = [
-			"cmder",            # Cmder
-			"conemu",           # ConEmu (32-bit)
-			"conemu64",         # ConEmu (64-bit)
-			"mintty",           # Git Bash (mintty)
-			"putty",            # PuTTY
-			"kitty",            # KiTTY (PuTTY fork)
-			"terminus",         # Terminus
-			"hyper",            # Hyper
-			"alacritty",        # Alacritty
-			"wezterm",          # WezTerm
-			"wezterm-gui",      # WezTerm GUI
-			"tabby",            # Tabby
-			"fluent",           # FluentTerminal
-		]
-
-		# WSL (Windows Subsystem for Linux) (v1.0.27+)
-		# Section 5.2: WSL Support
-		wslTerminals = [
-			"wsl",              # WSL executable
-			"bash",             # WSL bash (may appear as this)
-		]
-
-		allSupported = builtinTerminals + thirdPartyTerminals + wslTerminals
-		return any(term in appName for term in allSupported)
+		return any(term in appName for term in _SUPPORTED_TERMINALS)
 
 	def _getPositionContext(self, textInfo=None) -> str:
 		"""
