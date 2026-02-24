@@ -4,6 +4,21 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Enforce CHANGELOG.md updates via CI** ([skip changelog] to bypass): New GitHub Actions
+  workflow (`.github/workflows/changelog-check.yml`) blocks any PR or direct push to `main`
+  that does not update `CHANGELOG.md`. Provides a clear error message with instructions.
+  Non-user-facing changes (CI fixes, typos) can skip the check by adding `[skip changelog]`
+  to the PR title or commit message.
+
+### Changed
+
+- **CHANGELOG.md audit**: Added PR number references (`(#nn)`) to all version headers from
+  v1.0.47 down to v1.0.0 for full traceability. Added 11 previously undocumented PR entries
+  covering bug fixes, new features, and code-quality improvements from PRs #22, #27, #29, #32,
+  #34, #36–#40, #43, #48, #49, #51, and #52.
+
 ## [1.0.47] - 2026-02-24 (#53, #54)
 
 ### Changed
@@ -1966,17 +1981,17 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 - Phase 1 features inspired by [Speakup](https://github.com/linux-speakup/speakup) screen reader
 - Implementation based on SPEAKUP_FEATURE_ANALYSIS.md recommendations
 
-## [1.0.10] - 2026-02-21
+## [1.0.10] - 2026-02-21 (#18)
 
 ### Changed
 - Version bump and rebuild for distribution
 
-## [1.0.9] - 2026-02-20
+## [1.0.9] - 2026-02-20 (#16)
 
 ### Changed
 - Version bump and rebuild for distribution
 
-## [1.0.8] - 2026-02-19
+## [1.0.8] - 2026-02-19 (#13, #14)
 
 ### Added
 - **Multiple cursor tracking modes** - Four distinct tracking modes (Off, Standard, Highlight, Window) inspired by Speakup
@@ -2011,7 +2026,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 ### Credits
 - Cursor tracking modes, screen windowing, and attribute reading inspired by [Speakup](https://github.com/linux-speakup/speakup) screen reader
 
-## [1.0.7] - 2026-02-19
+## [1.0.7] - 2026-02-19 (#9, #10)
 
 ### Fixed
 - Fixed spell current word command (NVDA+Alt+K twice) - now properly binds navigator to terminal before accessing review cursor
@@ -2022,7 +2037,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 - Added api.setNavigatorObject(self._boundTerminal) call in script_readCurrentCharPhonetic before accessing review position
 - Both functions now follow established pattern of binding navigator before review cursor access
 
-## [1.0.5] - 2026-02-19
+## [1.0.5] - 2026-02-19 (#5)
 
 ### Fixed
 - Review cursor architecture corrected: navigator object is now used only in event_gainFocus to route the review cursor to the terminal; all read operations (line/word/character) use the review cursor directly via api.getReviewPosition(), preserving review position between navigation calls
@@ -2031,7 +2046,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 - Removed erroneous api.setNavigatorObject() calls from _readLine, _readWord, _readChar, _getWordAtReview, and script_readCurrentCharPhonetic
 - script_copyScreen now uses stored self._boundTerminal reference instead of re-fetching focus object
 
-## [1.0.4] - 2026-02-19
+## [1.0.4] - 2026-02-19 (#5, #7)
 
 ### Added
 - Line copy (NVDA+Alt+C) and screen copy (NVDA+Alt+Shift+C) functionality to copy terminal content to clipboard
@@ -2050,7 +2065,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 ### Fixed
 - Fixed line, word, and character reading by switching to NVDA review cursor API
 
-## [1.0.2] - 2026-02-19
+## [1.0.2] - 2026-02-19 (#3, #4)
 
 ### Fixed
 - Fixed "Missing file or invalid file format" error when installing add-on in NVDA
@@ -2060,7 +2075,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 - Updated build.py to skip addon/__init__.py during package creation (lines 45-48)
 - NVDA add-ons must not include __init__.py at the root level of the package
 
-## [1.0.1] - 2026-02-19
+## [1.0.1] - 2026-02-19 (#2)
 
 ### Changed
 - Updated compatibility for NVDA 2026.1 (beta)
@@ -2072,7 +2087,7 @@ See `WSL_TESTING_GUIDE.md` for detailed testing instructions and troubleshooting
 - Confirmed script decorator usage follows current NVDA patterns
 - Validated settings panel integration with modern NVDA
 
-## [1.0.0] - 2024-02-19
+## [1.0.0] - 2024-02-19 (#1)
 
 ### Added
 - Initial release of TDSR for NVDA add-on
