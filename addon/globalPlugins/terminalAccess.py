@@ -4041,6 +4041,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	2 - Highlight: Track highlighted/selected text
 	3 - Window: Track within defined screen region
 	"""
+
+	# Duration (in seconds) after an Enter/Return key press during which a
+	# caret-driven "Blank" announcement is suppressed.  This gives the terminal
+	# time to render command output before we speak the empty line.
+	_ENTER_SUPPRESSION_WINDOW: float = 0.3
 	
 	def __init__(self):
 		"""Initialize the Terminal Access global plugin."""
@@ -4073,6 +4078,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastLineStartOffset: Optional[int] = None
 		self._lastLineEndOffset: Optional[int] = None
 		self._lastLineGeneration: int = -1
+
+		# Timestamp of the last Enter/Return key press.
+		# Used to suppress premature blank announcements in _announceStandardCursor
+		# when the caret lands on an empty line before terminal output has arrived.
+		self._lastEnterTime: Optional[float] = None
 
 		# Highlight tracking state
 		self._lastHighlightedText = None
@@ -4434,8 +4444,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		nextHandler()
 
-		# Only handle if in a terminal and keyEcho is enabled
-		if not self.isTerminalApp(obj) or not config.conf["terminalAccess"]["keyEcho"]:
+		# Only handle if in a terminal
+		if not self.isTerminalApp(obj):
+			return
+
+		# Track Enter/Return presses to suppress premature blank announcements in
+		# _announceStandardCursor.  This must run even when keyEcho is disabled
+		# so that cursor-tracking suppression is active regardless of echo state.
+		if ch == '\r':
+			self._lastEnterTime = time.time()
+
+		# Don't echo if key echo is disabled or in quiet mode
+		if not config.conf["terminalAccess"]["keyEcho"]:
 			return
 
 		# Don't echo if in quiet mode
@@ -4663,6 +4683,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.message(charToSpeak)
 		elif char == ' ':
 			ui.message(_("space"))
+		elif not char or char in ('\r', '\n'):
+			# The caret has landed on an empty or newline position. If Enter was
+			# recently pressed, suppress the announcement to avoid saying "blank"
+			# before the terminal has rendered command output.
+			if (self._lastEnterTime is not None
+					and (time.time() - self._lastEnterTime) < self._ENTER_SUPPRESSION_WINDOW):
+				return
+			ui.message(_("Blank"))
 
 	def _announceHighlightCursor(self, obj):
 		"""
