@@ -2698,9 +2698,11 @@ class NewOutputAnnouncer:
 		if not text.strip():
 			return
 
-		# Re-check quiet mode (might have changed while timer was running)
+		# Re-check quiet mode and feature toggle (might have changed while timer was running)
 		try:
 			if config.conf["terminalAccess"]["quietMode"]:
+				return
+			if not config.conf["terminalAccess"]["announceNewOutput"]:
 				return
 		except Exception:
 			return
