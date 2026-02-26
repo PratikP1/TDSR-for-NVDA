@@ -6340,6 +6340,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@script(
 		# Translators: Description for reading to top
 		description=_("Read from cursor to top of buffer"),
+		gesture="kb:NVDA+shift+upArrow"
 	)
 	def script_readToTop(self, gesture):
 		"""Read from current cursor position to top of buffer."""
@@ -6374,6 +6375,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@script(
 		# Translators: Description for reading to bottom
 		description=_("Read from cursor to bottom of buffer"),
+		gesture="kb:NVDA+shift+downArrow"
 	)
 	def script_readToBottom(self, gesture):
 		"""Read from current cursor position to bottom of buffer."""
@@ -6918,7 +6920,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: Description for previous command navigation
 		description=_("Navigate to previous command in history"),
 		category=SCRCAT_TERMINALACCESS,
-		gesture="kb:NVDA+shift+upArrow"
+		gesture="kb:NVDA+h"
 	)
 	def script_previousCommand(self, gesture):
 		"""Navigate to previous command."""
@@ -6943,7 +6945,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: Description for next command navigation
 		description=_("Navigate to next command in history"),
 		category=SCRCAT_TERMINALACCESS,
-		gesture="kb:NVDA+shift+downArrow"
+		gesture="kb:NVDA+g"
 	)
 	def script_nextCommand(self, gesture):
 		"""Navigate to next command."""

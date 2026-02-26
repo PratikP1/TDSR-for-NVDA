@@ -110,8 +110,8 @@ Try these settings:
 ### Reading Portions of Screen
 1. Position cursor where you want to start
 2. Press **NVDA+Shift+Right** to read to end of line
-3. Press **NVDA+Shift+Left** to read to start of line
-4. Read-to-top and read-to-bottom commands can be assigned via NVDA Input Gestures dialog
+3. Or **NVDA+Shift+Down** to read to bottom of buffer
+4. Use other directions (Left/Up) as needed
 
 ### Reading Long Files or Logs
 1. Navigate to start position
@@ -165,7 +165,7 @@ Try these settings:
 
 ### Directional Reading
 - **NVDA+Shift+Left/Right** - Read to beginning/end of line
-- Read to top/bottom of buffer (assignable via NVDA Input Gestures)
+- **NVDA+Shift+Up/Down** - Read to top/bottom of buffer
 
 ### Punctuation & Tracking
 - **NVDA+Alt+[/]** - Decrease/increase punctuation level
@@ -192,7 +192,7 @@ Try these settings:
 
 ### Command History (v1.0.31+)
 - **NVDA+Shift+H** - Scan command history
-- **NVDA+Shift+Up/Down** - Navigate previous/next command
+- **NVDA+H/G** - Navigate previous/next command
 - **NVDA+Shift+L** - List command history
 
 ### Search (v1.0.30+)
