@@ -4,6 +4,26 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.50] - 2026-02-26
+
+### Changed
+
+- **Typing-based blank suppression**: Replaced the deferred blank timer approach (which still
+  announced "Blank" after 300ms and delayed output) with a simpler, more effective typing-based
+  suppression. After any keystroke (especially Enter), "Blank" is suppressed for 500ms since the
+  terminal output is the meaningful feedback, not the transient empty line. Navigation-triggered
+  blanks (arrow keys, page up/down) are still announced immediately — no delay.
+
+### Fixed
+
+- **Command history navigation (`NVDA+H`/`NVDA+G`) silent failure**: Fixed incorrect
+  `from . import ui` in `_jump_to_command` that caused an ImportError silently caught by
+  exception handling, making the gestures appear to do nothing.
+
+- **Search not finding visible text**: Added ANSI escape stripping to the search and command
+  history detection. Terminal buffer text may contain ANSI formatting codes that break substring
+  matching even though the text appears correctly on screen.
+
 ## [1.0.49] - 2026-02-26
 
 ### Added
@@ -31,22 +51,6 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 - **Simplified bookmark gestures**: Bookmark shortcuts rationalised to avoid conflicts with other
   add-ons. Set-bookmark changed from `NVDA+Shift+0-9` to `NVDA+Alt+0-9`. Jump-to-bookmark
   remains `Alt+0-9`. List-bookmarks remains `NVDA+Shift+B`.
-
-- **Typing-based blank suppression**: Replaced the deferred blank timer approach (which still
-  announced "Blank" after 300ms and delayed output) with a simpler, more effective typing-based
-  suppression. After any keystroke (especially Enter), "Blank" is suppressed for 500ms since the
-  terminal output is the meaningful feedback, not the transient empty line. Navigation-triggered
-  blanks (arrow keys, page up/down) are still announced immediately — no delay.
-
-### Fixed
-
-- **Command history navigation silent failure**: Fixed `from . import ui` in `_jump_to_command`
-  that caused an ImportError silently caught by exception handling, making NVDA+H/G appear to
-  do nothing. Now uses the correct module-level `ui` import.
-
-- **Search not finding visible text**: Added ANSI escape stripping to the search and command
-  history detection. Terminal buffer text may contain ANSI formatting codes that break substring
-  matching even though the text appears correctly on screen.
 
 ### Improved
 
