@@ -206,16 +206,63 @@ class TestBlankSuppression(unittest.TestCase):
 		self.assertEqual(mock_ui.message.call_args[0][0], 'x')
 
 	# ------------------------------------------------------------------
+	# Rapid re-feeds scheduled after blank suppression
+	# ------------------------------------------------------------------
+
+	@patch('globalPlugins.terminalAccess.wx')
+	@patch('globalPlugins.terminalAccess.ui')
+	def test_rapid_refeeds_scheduled_after_suppression(self, mock_ui, mock_wx):
+		"""When blank is suppressed, rapid re-feeds must be scheduled."""
+		plugin, mock_obj = self._make_plugin_with_cursor('')
+
+		# Simulate recent typing.
+		plugin._lastTypedTime = time.time()
+		plugin._announceStandardCursor(mock_obj)
+
+		# Blank must NOT be spoken.
+		mock_ui.message.assert_not_called()
+
+		# wx.CallLater must have been called twice (50ms and 150ms re-feeds).
+		self.assertEqual(mock_wx.CallLater.call_count, 2)
+		delays = [call[0][0] for call in mock_wx.CallLater.call_args_list]
+		self.assertIn(50, delays)
+		self.assertIn(150, delays)
+
+	@patch('globalPlugins.terminalAccess.wx')
+	@patch('globalPlugins.terminalAccess.ui')
+	def test_no_refeeds_for_navigation_blank(self, mock_ui, mock_wx):
+		"""Navigation-triggered blanks must NOT schedule re-feeds."""
+		plugin, mock_obj = self._make_plugin_with_cursor('')
+
+		# No recent typing — navigation scenario.
+		mock_wx.CallLater.reset_mock()
+		plugin._announceStandardCursor(mock_obj)
+
+		# "Blank" must be spoken.
+		mock_ui.message.assert_called_once()
+
+		# No re-feeds should be scheduled for navigation blanks.
+		mock_wx.CallLater.assert_not_called()
+
+	# ------------------------------------------------------------------
 	# Grace period constant
 	# ------------------------------------------------------------------
 
 	def test_grace_period_is_reasonable(self):
-		"""The grace period should be between 0.1 and 2.0 seconds."""
+		"""The grace period should be between 0.05 and 2.0 seconds."""
 		from globalPlugins.terminalAccess import GlobalPlugin
 
 		grace = GlobalPlugin._BLANK_AFTER_TYPING_GRACE
-		self.assertGreaterEqual(grace, 0.1)
+		self.assertGreaterEqual(grace, 0.05)
 		self.assertLessEqual(grace, 2.0)
+
+	def test_grace_period_is_short(self):
+		"""The grace period should be short enough to avoid noticeable delay."""
+		from globalPlugins.terminalAccess import GlobalPlugin
+
+		grace = GlobalPlugin._BLANK_AFTER_TYPING_GRACE
+		# Must be under 300ms to keep output responsive
+		self.assertLessEqual(grace, 0.3)
 
 
 if __name__ == '__main__':

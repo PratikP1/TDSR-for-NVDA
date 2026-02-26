@@ -4389,7 +4389,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	# empty line right after pressing Enter (or any other key) in a
 	# terminal.  Navigation-triggered blanks (arrow keys, page up/down)
 	# are unaffected and announced immediately.
-	_BLANK_AFTER_TYPING_GRACE: float = 0.5
+	# Kept short (150ms) so the dead-zone is barely perceptible while
+	# still reliably covering the cursor-tracking debounce (20ms).
+	_BLANK_AFTER_TYPING_GRACE: float = 0.15
 	
 	def __init__(self):
 		"""Initialize the Terminal Access global plugin."""
@@ -5009,6 +5011,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# For pure navigation (arrow keys, page up/down) the blank IS
 			# meaningful feedback and is announced immediately.
 			if (time.time() - self._lastTypedTime) < self._BLANK_AFTER_TYPING_GRACE:
+				# Blank suppressed.  Schedule rapid re-feeds so the output
+				# announcer detects new content sooner than the normal
+				# 300ms polling interval — reduces the perceived gap
+				# between pressing Enter and hearing the command output.
+				try:
+					wx.CallLater(50, self._feedNewOutputAnnouncer, obj)
+					wx.CallLater(150, self._feedNewOutputAnnouncer, obj)
+				except Exception:
+					pass
 				return
 			ui.message(_("Blank"))
 
