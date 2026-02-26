@@ -75,8 +75,8 @@ class TestRegressionPrevention(unittest.TestCase):
         bookmark.__str__ = Mock(return_value="regression_expire")
 
         # Set very short timeout
-        original_timeout = cache.CACHE_TIMEOUT_MS
-        cache.CACHE_TIMEOUT_MS = 50  # 50ms
+        original_timeout = cache.CACHE_TIMEOUT_S
+        cache.CACHE_TIMEOUT_S = 0.05  # 50ms
 
         cache.set(bookmark, 10, 5)
 
@@ -91,7 +91,7 @@ class TestRegressionPrevention(unittest.TestCase):
         result2 = cache.get(bookmark)
         self.assertIsNone(result2, "Cache entry should expire after timeout")
 
-        cache.CACHE_TIMEOUT_MS = original_timeout
+        cache.CACHE_TIMEOUT_S = original_timeout
 
     def test_cache_size_limit_regression(self):
         """Regression test: Cache must respect size limit."""

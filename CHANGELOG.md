@@ -19,6 +19,33 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
   than the normal 300ms polling interval. This reduces the perceived gap between pressing Enter
   and hearing the command output.
 
+### Performance
+
+- **PositionCache**: Stores timestamps in native seconds (avoiding per-call millisecond
+  conversions) and uses `.get()` for single-lookup cache access instead of `in` + `[]`.
+
+- **TextDiffer**: Added length-based pre-checks to skip full O(n) string comparisons when the
+  buffer is unchanged (same length → likely identical). Append detection uses length comparison
+  before `startswith`. Dramatic length changes (>500 chars) skip the expensive `rpartition` path.
+
+- **NewOutputAnnouncer**: Feed dedup guard (50ms minimum interval between feeds) prevents
+  duplicate processing from the same event. Deadline-based coalesce timer reuses existing threads
+  instead of cancel+recreate on every feed. Single config lookup per feed call. `.strip()` called
+  once instead of four times per feed.
+
+- **CommandHistoryManager**: Replaced per-command `POSITION_ALL` + O(line_num) walks with a
+  single forward walk from `POSITION_FIRST`, reducing COM calls from O(n²) to O(n).
+
+- **isTerminalApp() caching**: Results cached per `appName` in a dict, turning O(30) substring
+  scans into O(1) lookups on repeated calls. Substring matching is preserved for TUI app
+  detection within terminal host processes.
+
+- **Punctuation set caching**: `_shouldProcessSymbol()` caches the current punctuation set and
+  only refreshes when the punctuation level changes, avoiding repeated dict lookups.
+
+- **Removed redundant `import re`**: Two dynamic `import re` statements inside
+  `OutputSearchManager.search()` replaced with module-level `re` usage.
+
 ### Fixed
 
 - **Command history navigation (`NVDA+H`/`NVDA+G`) silent failure**: Fixed incorrect

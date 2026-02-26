@@ -274,7 +274,7 @@ class PositionCache:
 		- Space complexity: O(min(n, MAX_CACHE_SIZE)) where n = unique bookmarks
 	"""
 
-	CACHE_TIMEOUT_MS = 1000  # 1 second timeout
+	CACHE_TIMEOUT_S: float = 1.0  # Seconds (avoids per-call ms conversion)
 	MAX_CACHE_SIZE = 100  # Maximum number of cached positions
 
 	def __init__(self) -> None:
@@ -294,14 +294,13 @@ class PositionCache:
 		"""
 		with self._lock:
 			key = str(bookmark)
-			if key in self._cache:
-				row, col, timestamp = self._cache[key]
-				# Check if cache entry is still valid
-				if (time.time() * 1000 - timestamp) < self.CACHE_TIMEOUT_MS:
+			entry = self._cache.get(key)
+			if entry is not None:
+				row, col, timestamp = entry
+				if (time.time() - timestamp) < self.CACHE_TIMEOUT_S:
 					return (row, col)
-				else:
-					# Expired entry, remove it
-					del self._cache[key]
+				# Expired entry, remove it
+				del self._cache[key]
 		return None
 
 	def set(self, bookmark: Any, row: int, col: int) -> None:
@@ -316,13 +315,11 @@ class PositionCache:
 		with self._lock:
 			# Enforce size limit - remove oldest entry if needed
 			if len(self._cache) >= self.MAX_CACHE_SIZE:
-				# Remove oldest entry (simple FIFO strategy)
 				oldest_key = next(iter(self._cache))
 				del self._cache[oldest_key]
 
 			key = str(bookmark)
-			timestamp = time.time() * 1000  # Current time in milliseconds
-			self._cache[key] = (row, col, timestamp)
+			self._cache[key] = (row, col, time.time())
 
 	def clear(self) -> None:
 		"""Clear all cached positions."""
@@ -377,15 +374,19 @@ class TextDiffer:
 	KIND_CHANGED = "changed"    # Non-trivial change (edit, clear, etc.)
 	KIND_LAST_LINE_UPDATED = "last_line_updated"  # Only the last line changed (progress bars, spinners)
 
-	__slots__ = ('_last_text',)
+	__slots__ = ('_last_text', '_last_len')
 
 	def __init__(self) -> None:
 		"""Initialise with no previous snapshot."""
 		self._last_text: str | None = None
+		self._last_len: int = 0
 
 	def update(self, current_text: str) -> tuple[str, str]:
 		"""
 		Compare *current_text* to the stored snapshot and return a diff result.
+
+		Uses length pre-checks to avoid expensive full-string comparisons
+		on the common unchanged and append cases.
 
 		Args:
 			current_text: The full current terminal text.
@@ -395,35 +396,46 @@ class TextDiffer:
 			``KIND_*`` constants and *new_content* is the appended portion
 			(non-empty for :attr:`KIND_APPENDED` and :attr:`KIND_LAST_LINE_UPDATED`).
 		"""
-		if self._last_text is None:
+		old = self._last_text
+		if old is None:
 			self._last_text = current_text
+			self._last_len = len(current_text)
 			return (self.KIND_INITIAL, "")
 
-		if current_text == self._last_text:
+		cur_len = len(current_text)
+
+		# Fast identity check: same length → likely unchanged.
+		if cur_len == self._last_len and current_text == old:
 			return (self.KIND_UNCHANGED, "")
 
-		# Fast append detection: old text is a strict prefix of new text.
-		old = self._last_text
-		if current_text.startswith(old):
-			appended = current_text[len(old):]
+		# Fast append detection: new text is longer and starts with old text.
+		old_len = self._last_len
+		if cur_len > old_len and current_text[:old_len] == old:
+			appended = current_text[old_len:]
 			self._last_text = current_text
+			self._last_len = cur_len
 			return (self.KIND_APPENDED, appended)
 
 		# Last-line overwrite detection: everything before the last newline is
 		# identical, only the trailing content differs (progress bars, spinners).
-		old_prefix, old_sep, _old_tail = old.rpartition('\n')
-		new_prefix, new_sep, new_tail = current_text.rpartition('\n')
-		if old_sep and new_sep and old_prefix == new_prefix:
-			self._last_text = current_text
-			return (self.KIND_LAST_LINE_UPDATED, new_tail)
+		# Skip the expensive rpartition if the lengths differ dramatically.
+		if abs(cur_len - old_len) <= 500:
+			old_prefix, old_sep, _old_tail = old.rpartition('\n')
+			new_prefix, new_sep, new_tail = current_text.rpartition('\n')
+			if old_sep and new_sep and old_prefix == new_prefix:
+				self._last_text = current_text
+				self._last_len = cur_len
+				return (self.KIND_LAST_LINE_UPDATED, new_tail)
 
 		# Non-trivial change.
 		self._last_text = current_text
+		self._last_len = cur_len
 		return (self.KIND_CHANGED, "")
 
 	def reset(self) -> None:
 		"""Discard the stored snapshot so the next :meth:`update` is treated as initial."""
 		self._last_text = None
+		self._last_len = 0
 
 	@property
 	def last_text(self) -> str | None:
@@ -2778,6 +2790,9 @@ class NewOutputAnnouncer:
 
 	# Polling interval in seconds (300ms)
 	POLL_INTERVAL = 0.3
+	# Minimum interval between consecutive feed() calls (50ms).
+	# Prevents duplicate buffer reads when event_caret and polling overlap.
+	_MIN_FEED_INTERVAL: float = 0.05
 
 	def __init__(self) -> None:
 		"""Initialise with no previous snapshot."""
@@ -2788,6 +2803,11 @@ class NewOutputAnnouncer:
 		self._poll_thread: threading.Thread | None = None
 		self._stop_polling = threading.Event()
 		self._terminal_obj = None
+		self._last_feed_time: float = 0.0
+		# Deadline-based coalescing: avoids cancel+recreate of threading.Timer
+		# on every content update.  The running timer checks the deadline when
+		# it fires and reschedules itself if the deadline was pushed forward.
+		self._coalesce_deadline: float = 0.0
 
 	def feed(self, text: str) -> None:
 		"""
@@ -2797,69 +2817,92 @@ class NewOutputAnnouncer:
 		Args:
 			text: The full current terminal buffer text.
 		"""
-		# Respect quiet mode and master toggle
+		# Throttle: skip if the last feed was very recent (duplicate event_caret / poll overlap)
+		now = time.time()
+		if (now - self._last_feed_time) < self._MIN_FEED_INTERVAL:
+			return
+		self._last_feed_time = now
+
+		# Respect quiet mode and master toggle — single config lookup
 		try:
-			if config.conf["terminalAccess"]["quietMode"]:
-				return
-			if not config.conf["terminalAccess"]["announceNewOutput"]:
+			ta_conf = config.conf["terminalAccess"]
+			if ta_conf["quietMode"] or not ta_conf["announceNewOutput"]:
 				return
 		except Exception:
 			return
 
 		kind, new_content = self._differ.update(text)
 
-		if kind == TextDiffer.KIND_LAST_LINE_UPDATED and new_content.strip():
+		if kind == TextDiffer.KIND_LAST_LINE_UPDATED:
 			# Last-line overwrite (progress bars, spinners): REPLACE pending
 			# text because the old partial content is now stale.
+			stripped = new_content.strip()
+			if not stripped:
+				return
 			try:
-				if config.conf["terminalAccess"]["stripAnsiInOutput"]:
+				if ta_conf["stripAnsiInOutput"]:
 					new_content = ANSIParser.stripANSI(new_content)
+					if not new_content.strip():
+						return
 			except Exception:
 				pass
-			if not new_content.strip():
-				return
-			with self._lock:
-				self._pending_text = new_content
-				if self._timer is not None:
-					self._timer.cancel()
-				try:
-					coalesce_ms = int(config.conf["terminalAccess"]["newOutputCoalesceMs"])
-				except Exception:
-					coalesce_ms = 200
-				self._timer = threading.Timer(coalesce_ms / 1000.0, self._announce_pending)
-				self._timer.daemon = True
-				self._timer.start()
+			self._schedule_coalesce(new_content, replace=True, ta_conf=ta_conf)
 			return
 
-		if kind != TextDiffer.KIND_APPENDED or not new_content.strip():
+		if kind != TextDiffer.KIND_APPENDED:
+			return
+		stripped = new_content.strip()
+		if not stripped:
 			return
 
 		# Strip ANSI escape codes if configured
 		try:
-			if config.conf["terminalAccess"]["stripAnsiInOutput"]:
+			if ta_conf["stripAnsiInOutput"]:
 				new_content = ANSIParser.stripANSI(new_content)
+				if not new_content.strip():
+					return
 		except Exception:
 			pass
 
-		if not new_content.strip():
-			return
+		self._schedule_coalesce(new_content, replace=False, ta_conf=ta_conf)
 
-		# Accumulate and (re)start coalesce timer
+	def _schedule_coalesce(self, content: str, *, replace: bool, ta_conf) -> None:
+		"""
+		Accumulate (or replace) pending text and ensure a coalesce timer is running.
+
+		Uses a deadline approach: existing timers are NOT cancelled.  When the
+		timer fires it checks whether the deadline was pushed forward and, if
+		so, reschedules itself with the remaining time.  This avoids creating a
+		new ``threading.Timer`` (and its thread) on every content update.
+		"""
+		try:
+			coalesce_ms = int(ta_conf["newOutputCoalesceMs"])
+		except Exception:
+			coalesce_ms = 200
+		coalesce_s = coalesce_ms / 1000.0
+
 		with self._lock:
-			self._pending_text += new_content
-			if self._timer is not None:
-				self._timer.cancel()
-			try:
-				coalesce_ms = int(config.conf["terminalAccess"]["newOutputCoalesceMs"])
-			except Exception:
-				coalesce_ms = 200
-			self._timer = threading.Timer(coalesce_ms / 1000.0, self._announce_pending)
-			self._timer.daemon = True
-			self._timer.start()
+			if replace:
+				self._pending_text = content
+			else:
+				self._pending_text += content
+			self._coalesce_deadline = time.time() + coalesce_s
+			# Only create a new timer if none is currently alive.
+			if self._timer is None or not self._timer.is_alive():
+				self._timer = threading.Timer(coalesce_s, self._announce_pending)
+				self._timer.daemon = True
+				self._timer.start()
 
 	def _announce_pending(self) -> None:
 		"""Announce the accumulated pending text (called from timer thread)."""
 		with self._lock:
+			remaining = self._coalesce_deadline - time.time()
+			if remaining > 0.005:
+				# Deadline was pushed forward — reschedule instead of announcing.
+				self._timer = threading.Timer(remaining, self._announce_pending)
+				self._timer.daemon = True
+				self._timer.start()
+				return
 			text = self._pending_text
 			self._pending_text = ""
 			self._timer = None
@@ -2869,16 +2912,15 @@ class NewOutputAnnouncer:
 
 		# Re-check quiet mode and feature toggle (might have changed while timer was running)
 		try:
-			if config.conf["terminalAccess"]["quietMode"]:
-				return
-			if not config.conf["terminalAccess"]["announceNewOutput"]:
+			ta_conf = config.conf["terminalAccess"]
+			if ta_conf["quietMode"] or not ta_conf["announceNewOutput"]:
 				return
 		except Exception:
 			return
 
 		lines = [ln for ln in text.split('\n') if ln.strip()]
 		try:
-			max_lines = int(config.conf["terminalAccess"]["newOutputMaxLines"])
+			max_lines = int(ta_conf["newOutputMaxLines"])
 		except Exception:
 			max_lines = 20
 
@@ -3799,10 +3841,8 @@ class OutputSearchManager:
 		def _find_match_offset(line_text, pattern, case_sensitive, use_regex):
 			"""Find the character offset of the first match in the line."""
 			if use_regex:
-				import re
 				flags = 0 if case_sensitive else re.IGNORECASE
-				regex = re.compile(pattern, flags)
-				match = regex.search(line_text)
+				match = re.search(pattern, line_text, flags)
 				return match.start() if match else 0
 			else:
 				search_pattern = pattern if case_sensitive else pattern.lower()
@@ -3834,10 +3874,9 @@ class OutputSearchManager:
 			lines = all_text.split('\n')
 
 			if use_regex:
-				import re
 				flags = 0 if case_sensitive else re.IGNORECASE
-				regex = re.compile(pattern, flags)
-				matching_indices = [i for i, line in enumerate(lines) if regex.search(line)]
+				compiled = re.compile(pattern, flags)
+				matching_indices = [i for i, line in enumerate(lines) if compiled.search(line)]
 			else:
 				search_pattern = pattern if case_sensitive else pattern.lower()
 				matching_indices = [
@@ -4095,6 +4134,9 @@ class CommandHistoryManager:
 		"""
 		Scan terminal output for new commands and store them.
 
+		Uses a single forward walk from POSITION_FIRST to collect bookmarks,
+		avoiding repeated POSITION_ALL + per-command O(line_num) walks.
+
 		Returns:
 			Number of new commands detected
 		"""
@@ -4115,51 +4157,60 @@ class CommandHistoryManager:
 
 			lines = content.split('\n')
 			new_commands = 0
+			scan_start = self._last_scan_line
+			scan_end = len(lines)
 
-			# Scan from last scan position to end
-			for line_num in range(self._last_scan_line, len(lines)):
-				line = lines[line_num].strip()
+			if scan_start >= scan_end:
+				return 0
 
-				if not line:
-					continue
+			# Single forward walk: start at POSITION_FIRST, advance to
+			# scan_start, then walk through new lines collecting bookmarks
+			# only for matching lines.  This is O(total_new_lines) COM calls
+			# instead of O(sum_of_line_numbers) for the old per-command walk.
+			try:
+				cursor = self._terminal.makeTextInfo(textInfos.POSITION_FIRST)
+				# Skip to scan_start position
+				if scan_start > 0:
+					cursor.move(textInfos.UNIT_LINE, scan_start)
 
-				# Try to match against prompt patterns
-				for pattern in self._prompt_patterns:
-					match = pattern.match(line)
-					if match:
-						command_text = match.group(1).strip()
+				for line_num in range(scan_start, scan_end):
+					line = lines[line_num].strip()
 
-						# Ignore empty commands or very short ones
-						if len(command_text) < 2:
-							continue
+					if line:
+						# Try to match against prompt patterns
+						for pat in self._prompt_patterns:
+							match = pat.match(line)
+							if match:
+								command_text = match.group(1).strip()
 
-						# Check if this is a duplicate of last command
-						if self._history and self._history[-1][1] == command_text:
-							continue
+								# Ignore empty commands or very short ones
+								if len(command_text) < 2:
+									continue
 
-						# Create bookmark at this line for navigation
-						try:
-							line_info = self._terminal.makeTextInfo(textInfos.POSITION_ALL)
-							# Move to the specific line
-							for _ in range(line_num):
-								line_info.move(textInfos.UNIT_LINE, 1)
+								# Check if this is a duplicate of last command
+								if self._history and self._history[-1][1] == command_text:
+									continue
 
-							bookmark = line_info.bookmark
+								# Grab bookmark from the cursor at current position
+								try:
+									bookmark = cursor.bookmark
+									self._history.append((line_num, command_text, bookmark))
+									new_commands += 1
+								except Exception:
+									pass
 
-							# Store command (line_num, command_text, bookmark)
-							self._history.append((line_num, command_text, bookmark))
-							new_commands += 1
+								break  # Found a match, no need to try other patterns
 
-							# deque(maxlen=...) handles size limiting automatically
-
-						except Exception:
-							# Bookmark creation failed, skip this command
-							pass
-
-						break  # Found a match, no need to try other patterns
+					# Advance cursor to next line
+					if line_num < scan_end - 1:
+						if not cursor.move(textInfos.UNIT_LINE, 1):
+							break
+			except Exception:
+				# Cursor walk failed — fall back silently
+				pass
 
 			# Update last scan position
-			self._last_scan_line = len(lines)
+			self._last_scan_line = scan_end
 
 			return new_commands
 
@@ -4430,6 +4481,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Enter, where the caret temporarily lands on an empty line.
 		self._lastTypedTime: float = 0.0
 
+		# isTerminalApp cache — maps appName (str) to bool result so the
+		# 30-entry substring scan runs only once per unique application name.
+		self._terminalAppCache: dict[str, bool] = {}
+
+		# Cached punctuation set — avoids dict lookup on every typed character.
+		# Invalidated when the punctuation level changes.
+		self._cachedPunctLevel: int = -1
+		self._cachedPunctSet: set | None = None
+
 		# Highlight tracking state
 		self._lastHighlightedText = None
 		self._lastHighlightPosition = None
@@ -4570,8 +4630,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		Check if the current application is a supported terminal.
 
 		Supports built-in Windows terminals, popular third-party terminal
-		emulators, and WSL (Windows Subsystem for Linux). Enhanced in v1.0.26
-		to support additional third-party terminals and v1.0.27 for WSL.
+		emulators, and WSL (Windows Subsystem for Linux).  Also detects TUI
+		applications that run *inside* terminal windows (their host process
+		is a supported terminal).
+
+		Results are cached per appName so the 30-entry substring scan only
+		runs once per unique application.  The cache is a plain dict keyed
+		by the lowercased appName string.
 
 		Args:
 			obj: The object to check. If None, uses the foreground object.
@@ -4590,11 +4655,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except (AttributeError, TypeError):
 			return False
 
-		# Ensure appName is a string
 		if not isinstance(appName, str):
 			return False
 
-		return any(term in appName for term in _SUPPORTED_TERMINALS)
+		# Cache lookup — avoids re-scanning 30 substrings on every event.
+		cached = self._terminalAppCache.get(appName)
+		if cached is not None:
+			return cached
+
+		result = any(term in appName for term in _SUPPORTED_TERMINALS)
+		self._terminalAppCache[appName] = result
+		return result
 
 	def _getPositionContext(self, textInfo=None) -> str:
 		"""
@@ -6205,6 +6276,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		Determine if a symbol should be processed/announced based on current punctuation level.
 
+		Uses a cached punctuation set so the dict lookup only occurs when the
+		level actually changes (rare), rather than on every character.
+
 		Args:
 			char: The character to check.
 
@@ -6214,15 +6288,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		level = config.conf["terminalAccess"]["punctuationLevel"]
 
 		if level == PUNCT_ALL:
-			# Level 3: Process all symbols
 			return True
 		if level == PUNCT_NONE:
-			# Level 0: Process no symbols
 			return False
 
-		# Level 1 or 2: Check if character is in the level's punctuation set
-		punctSet = PUNCTUATION_SETS.get(level, set())
-		return char in punctSet
+		# Refresh cached set only when the level has changed.
+		if level != self._cachedPunctLevel:
+			self._cachedPunctLevel = level
+			self._cachedPunctSet = PUNCTUATION_SETS.get(level, set())
+
+		return char in self._cachedPunctSet
 
 	def _processSymbol(self, char):
 		"""

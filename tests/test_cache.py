@@ -47,8 +47,8 @@ class TestPositionCache(unittest.TestCase):
         bookmark.__str__ = Mock(return_value="test_bookmark_expire")
 
         # Set timeout to very small value for testing
-        original_timeout = self.cache.CACHE_TIMEOUT_MS
-        self.cache.CACHE_TIMEOUT_MS = 10  # 10ms
+        original_timeout = self.cache.CACHE_TIMEOUT_S
+        self.cache.CACHE_TIMEOUT_S = 0.01  # 10ms
 
         self.cache.set(bookmark, 10, 5)
 
@@ -64,7 +64,7 @@ class TestPositionCache(unittest.TestCase):
         self.assertIsNone(result)
 
         # Restore original timeout
-        self.cache.CACHE_TIMEOUT_MS = original_timeout
+        self.cache.CACHE_TIMEOUT_S = original_timeout
 
     def test_cache_max_size_limit(self):
         """Test cache respects maximum size limit."""

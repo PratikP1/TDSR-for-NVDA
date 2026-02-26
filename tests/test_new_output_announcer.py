@@ -90,6 +90,7 @@ class TestNewOutputAnnouncer(unittest.TestCase):
     def test_appended_output_announced(self, mock_msg):
         """Newly appended lines are spoken after the coalesce delay."""
         self.announcer.feed("line1\n")
+        time.sleep(0.06)  # exceed _MIN_FEED_INTERVAL dedup guard
         self.announcer.feed("line1\nline2\n")
         self._wait_for_announce()
         mock_msg.assert_called_once()
@@ -126,6 +127,7 @@ class TestNewOutputAnnouncer(unittest.TestCase):
     def test_ansi_stripped_when_configured(self, mock_msg):
         """ANSI escape codes are stripped before announcement."""
         self.announcer.feed("line1\n")
+        time.sleep(0.06)  # exceed _MIN_FEED_INTERVAL dedup guard
         self.announcer.feed("line1\n\x1b[32mgreen line\x1b[0m\n")
         self._wait_for_announce()
         mock_msg.assert_called_once()
@@ -138,6 +140,7 @@ class TestNewOutputAnnouncer(unittest.TestCase):
         """ANSI codes are NOT stripped when stripAnsiInOutput is False."""
         self._conf["stripAnsiInOutput"] = False
         self.announcer.feed("line1\n")
+        time.sleep(0.06)  # exceed _MIN_FEED_INTERVAL dedup guard
         self.announcer.feed("line1\n\x1b[32mgreen\x1b[0m\n")
         self._wait_for_announce()
         mock_msg.assert_called_once()
@@ -150,6 +153,7 @@ class TestNewOutputAnnouncer(unittest.TestCase):
         # newOutputMaxLines is 5 in setUp
         base = "\n".join(f"line{i}" for i in range(3)) + "\n"
         self.announcer.feed(base)
+        time.sleep(0.06)  # exceed _MIN_FEED_INTERVAL dedup guard
         # Append 10 more lines (> max_lines=5)
         extra = "\n".join(f"new{i}" for i in range(10)) + "\n"
         self.announcer.feed(base + extra)
@@ -382,6 +386,7 @@ class TestQuietModeInteractionWithAnnouncer(unittest.TestCase):
         self._conf["quietMode"] = False
         self.ann.reset()
         self.ann.feed("new base\n")
+        time.sleep(0.06)  # exceed _MIN_FEED_INTERVAL dedup guard
         self.ann.feed("new base\naudible line\n")
         time.sleep(0.2)
         mock_msg.assert_called_once()
