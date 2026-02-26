@@ -4,20 +4,7 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
-## [1.0.50] - 2026-02-26
-
-### Changed
-
-- **Typing-based blank suppression**: Replaced the deferred blank timer approach (which still
-  announced "Blank" after 300ms and delayed output) with a simpler, more effective typing-based
-  suppression. After any keystroke (especially Enter), "Blank" is suppressed for 150ms since the
-  terminal output is the meaningful feedback, not the transient empty line. Navigation-triggered
-  blanks (arrow keys, page up/down) are still announced immediately — no delay.
-
-- **Faster output detection after Enter**: When blank is suppressed after typing, rapid re-feeds
-  are scheduled at 50ms and 150ms intervals so the output announcer detects new content sooner
-  than the normal 300ms polling interval. This reduces the perceived gap between pressing Enter
-  and hearing the command output.
+## [1.0.51] - 2026-02-26
 
 ### Performance
 
@@ -45,6 +32,21 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 - **Removed redundant `import re`**: Two dynamic `import re` statements inside
   `OutputSearchManager.search()` replaced with module-level `re` usage.
+
+## [1.0.50] - 2026-02-26
+
+### Changed
+
+- **Typing-based blank suppression**: Replaced the deferred blank timer approach (which still
+  announced "Blank" after 300ms and delayed output) with a simpler, more effective typing-based
+  suppression. After any keystroke (especially Enter), "Blank" is suppressed for 150ms since the
+  terminal output is the meaningful feedback, not the transient empty line. Navigation-triggered
+  blanks (arrow keys, page up/down) are still announced immediately — no delay.
+
+- **Faster output detection after Enter**: When blank is suppressed after typing, rapid re-feeds
+  are scheduled at 50ms and 150ms intervals so the output announcer detects new content sooner
+  than the normal 300ms polling interval. This reduces the perceived gap between pressing Enter
+  and hearing the command output.
 
 ### Fixed
 
