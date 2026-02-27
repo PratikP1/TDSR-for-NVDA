@@ -4,6 +4,16 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.52] - 2026-02-26
+
+### Reverted
+
+- **Removed blank suppression logic**: Reverted the typing-based blank suppression introduced in
+  v1.0.50 and refined in v1.0.51. The suppression caused issues with Braille displays not
+  receiving "Blank" announcements and did not fully resolve the original spurious blank problem.
+  "Blank" is now announced immediately when the caret lands on an empty or newline position,
+  restoring reliable behavior for both speech and Braille output.
+
 ## [1.0.51] - 2026-02-26
 
 ### Performance

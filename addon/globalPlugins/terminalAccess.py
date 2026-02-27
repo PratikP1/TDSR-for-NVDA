@@ -4434,16 +4434,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	3 - Window: Track within defined screen region
 	"""
 
-	# Grace period (seconds) after the last typed character during which
-	# "Blank" announcements from cursor tracking are suppressed.  This
-	# prevents the spurious "Blank" that occurs when the caret lands on an
-	# empty line right after pressing Enter (or any other key) in a
-	# terminal.  Navigation-triggered blanks (arrow keys, page up/down)
-	# are unaffected and announced immediately.
-	# Kept short (150ms) so the dead-zone is barely perceptible while
-	# still reliably covering the cursor-tracking debounce (20ms).
-	_BLANK_AFTER_TYPING_GRACE: float = 0.15
-	
 	def __init__(self):
 		"""Initialize the Terminal Access global plugin."""
 		super().__init__()
@@ -4475,11 +4465,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastLineStartOffset: int | None = None
 		self._lastLineEndOffset: int | None = None
 		self._lastLineGeneration: int = -1
-
-		# Timestamp of the last typed character (from event_typedCharacter).
-		# Used to suppress "Blank" announcements that follow keystrokes like
-		# Enter, where the caret temporarily lands on an empty line.
-		self._lastTypedTime: float = 0.0
 
 		# isTerminalApp cache — maps appName (str) to bool result so the
 		# 30-entry substring scan runs only once per unique application name.
@@ -4855,10 +4840,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Increment content generation so cached line TextInfo is invalidated.
 		self._contentGeneration += 1
 
-		# Record typing timestamp so _announceStandardCursor can suppress
-		# spurious "Blank" announcements that follow keystrokes like Enter.
-		self._lastTypedTime = time.time()
-
 		# Process the character for speech
 		if ch:
 			# Check if we should condense repeated symbols
@@ -5075,23 +5056,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		elif char == ' ':
 			ui.message(_("space"))
 		elif not char or char in ('\r', '\n'):
-			# The caret is on an empty / newline position.  If the user just
-			# typed something (e.g. pressed Enter), the blank line is
-			# transient and the real output will be announced by the new-
-			# output announcer — suppress the "Blank" to avoid noise.
-			# For pure navigation (arrow keys, page up/down) the blank IS
-			# meaningful feedback and is announced immediately.
-			if (time.time() - self._lastTypedTime) < self._BLANK_AFTER_TYPING_GRACE:
-				# Blank suppressed.  Schedule rapid re-feeds so the output
-				# announcer detects new content sooner than the normal
-				# 300ms polling interval — reduces the perceived gap
-				# between pressing Enter and hearing the command output.
-				try:
-					wx.CallLater(50, self._feedNewOutputAnnouncer, obj)
-					wx.CallLater(150, self._feedNewOutputAnnouncer, obj)
-				except Exception:
-					pass
-				return
 			ui.message(_("Blank"))
 
 	def _announceHighlightCursor(self, obj):
