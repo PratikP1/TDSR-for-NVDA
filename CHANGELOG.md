@@ -13,9 +13,15 @@ All notable changes to Terminal Access for NVDA will be documented in this file.
   Braille displays via `braille.handler.message()`. Previously these used `speech.speakText()`
   which produced zero Braille output. Cursor tracking also notifies the Braille display of
   caret movement so it shows the full line context instead of a brief single-character flash.
+- **Automated NVDA Add-on Store submission**: CI workflow that automatically submits the addon
+  to the NVDA Add-on Store when a stable GitHub release is published.
 
 ### Fixed
 
+- **Build script now generates manifest.ini from buildVars.py**: Previously `manifest.ini` was
+  a static file that had to be manually kept in sync with `buildVars.py`, causing the v1.0.53
+  NVDA store submission to fail (the addon package declared itself as v1.0.52 internally).
+  The build script now auto-generates `manifest.ini` before packaging.
 - **Duplicate key echo when NVDA's speak-typed-characters is enabled**: When NVDA's global
   "Speak typed characters" setting was on, every keystroke was announced twice — once by NVDA
   and once by the addon. The addon now detects NVDA's `speakTypedCharacters` setting and defers

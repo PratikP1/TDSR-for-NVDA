@@ -17,15 +17,34 @@ from pathlib import Path
 # Import build variables
 import buildVars
 
+def generate_manifest():
+	"""Generate manifest.ini from buildVars.py to keep them in sync."""
+	info = buildVars.addon_info
+	manifest_path = Path("addon") / "manifest.ini"
+	lines = [
+		f'name = "{info["addon_name"]}"',
+		f'summary = "{info["addon_summary"]}"',
+		f'description = "{info["addon_description"]}"',
+		f'author = "{info["addon_author"]}"',
+		f'url = "{info["addon_url"]}"',
+		f'docFileName = "{info["addon_docFileName"]}"',
+		f'minimumNVDAVersion = "{info["addon_minimumNVDAVersion"]}"',
+		f'lastTestedNVDAVersion = "{info["addon_lastTestedNVDAVersion"]}"',
+		f'version = "{info["addon_version"]}"',
+	]
+	manifest_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+	print(f"Generated {manifest_path} (version {info['addon_version']})")
+
+
 def create_addon(output_file):
 	"""
 	Create an NVDA add-on bundle.
-	
+
 	Args:
 		output_file: Path to the output .nvda-addon file
 	"""
 	print(f"Creating add-on package: {output_file}")
-	
+
 	with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as addon_zip:
 		# Add all files from addon directory (manifest.ini lives inside addon/)
 		addon_path = Path("addon")
@@ -45,7 +64,7 @@ def create_addon(output_file):
 
 				addon_zip.write(str(file_path), arcname=str(arc_path))
 				print(f"  Added: {arc_path}")
-	
+
 	print(f"\nAdd-on package created successfully: {output_file}")
 	print(f"File size: {os.path.getsize(output_file) / 1024:.2f} KB")
 
@@ -74,6 +93,9 @@ def main():
 				return 1
 			os.remove(output_file)
 	
+	# Generate manifest.ini from buildVars.py
+	generate_manifest()
+
 	# Create the add-on
 	try:
 		create_addon(output_file)
