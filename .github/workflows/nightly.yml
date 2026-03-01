@@ -125,27 +125,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cleanup old nightly builds
-        if: steps.check_changes.outputs.has_changes == 'true'
-        run: |
-          # Keep only the last 7 nightly builds
-          NIGHTLIES=$(git tag -l "nightly-*" | sort -V | head -n -7)
-
-          if [ -n "$NIGHTLIES" ]; then
-            echo "Cleaning up old nightly builds:"
-            echo "$NIGHTLIES"
-
-            for tag in $NIGHTLIES; do
-              # Delete the tag
-              git push --delete origin $tag || true
-
-              # Delete the release (requires gh CLI)
-              # gh release delete $tag --yes || true
-            done
-          else
-            echo "No old nightly builds to clean up"
-          fi
-
       - name: Skip build (no changes)
         if: steps.check_changes.outputs.has_changes == 'false'
         run: |

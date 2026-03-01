@@ -117,29 +117,6 @@ jobs:
 
           echo "Updated 'latest' tag to point to v${{ steps.version.outputs.version }}"
 
-      - name: Delete old releases
-        if: steps.check_tag.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Cleaning up old releases (keeping only the latest)..."
-
-          # Get all releases except the one we just created
-          CURRENT_TAG="v${{ steps.version.outputs.version }}"
-
-          # List all releases and delete all except current
-          gh release list --repo ${{ github.repository }} --limit 100 --json tagName --jq '.[].tagName' | while read tag; do
-            if [ "$tag" != "$CURRENT_TAG" ] && [ "$tag" != "latest" ]; then
-              echo "Deleting old release: $tag"
-              gh release delete "$tag" --repo ${{ github.repository }} --yes || echo "Failed to delete $tag"
-
-              # Also delete the git tag
-              git push origin :refs/tags/$tag 2>/dev/null || echo "Tag $tag already deleted or doesn't exist"
-            fi
-          done
-
-          echo "Cleanup complete. Only $CURRENT_TAG and 'latest' remain."
-
       - name: Skip release (tag exists)
         if: steps.check_tag.outputs.exists == 'true'
         run: |
